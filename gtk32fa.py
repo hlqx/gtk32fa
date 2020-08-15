@@ -14,10 +14,10 @@ class MainWindow(Gtk.Window):
         self.rowlist = []
         Gtk.Window.__init__(self)
         # set up window parameters
-        self.set_title("2Factor")
+        self.set_title("GTK32FA")
         self.set_default_size(640, 640)
         # make a headerbar for the window
-        headerbar = Gtk.HeaderBar(title="2Factor", subtitle="0 codes in database", show_close_button=True)
+        headerbar = Gtk.HeaderBar(title="GTK32FA", show_close_button=True)
         self.set_titlebar(headerbar)
         # headerbar buttons
         headerbarbtn_addcode = Gtk.Button.new_from_icon_name("list-add", Gtk.IconSize.BUTTON)
