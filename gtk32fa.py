@@ -124,6 +124,9 @@ class MainWindow(Gtk.Window):
                  self.codelist.append(tuple(templist))
                  self.codeviewbox.add(self.newlistrow(self.codelist[-1], -1))
                  i = i+1
+            storage.close()
+        else:
+            open(storagefile, "x")
         # set stack page to codeviewpage
         self.stack.set_visible_child_name("codeviewpage")
 
@@ -144,11 +147,28 @@ class MainWindow(Gtk.Window):
         self.codelist.append(tuple((authcode, secret, secret_name, secret_issuer, idnumber)))
         self.codeviewbox.add(self.newlistrow(self.codelist[-1], -1))
         self.codeviewbox.show_all()
+        self.update_yaml(self.codelist[-1], self.newcode_secret_buffer.get_text())
         self.newcode_secret_entry.set_text("")
         self.newcode_name_entry.set_text("")
         self.newcode_issuer_entry.set_text("")
         self.stack.set_visible_child_name("codeviewpage")
-        print(self.codelist)
+
+    def update_yaml(self, data, secretstring):
+        yaml_add=("""
+{}:
+  - {}
+  - {}
+  - {}
+        """).format(data[4], data[2], data[3], secretstring)
+        while True:
+            try:
+                with open(Path(XDG_DATA_HOME / "GTK32FA" / "storage.yaml"), "a") as yamlfile:
+                    print(yaml_add, file=yamlfile)
+                    yamlfile.close()
+                    break
+            except FileNotFoundError:
+                open(Path(XDG_DATA_HOME / "GTK32FA" / "storage.yaml", 'x'))
+        
 
     def newcode_issuer_buffer_changed(self, entry_buffer=None, pos=None, chars=None, n_chars=None):
         self.issuerok = self.string_entry_buffer_handler(pos=pos, chars=chars, n_chars=n_chars, entry=self.newcode_issuer_entry, buffer=entry_buffer)
