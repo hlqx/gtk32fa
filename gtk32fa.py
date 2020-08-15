@@ -3,12 +3,17 @@
 import gi
 import pyotp as otp
 import threading
+from xdg import XDG_DATA_HOME, XDG_CONFIG_HOME
+from os import path
 from time import sleep
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GObject, Gio
 
 class MainWindow(Gtk.Window):
     def __init__(self):
+        # settings for theme
+        settings = Gtk.Settings.get_default()
+        settings.set_property("gtk-application-prefer-dark-theme", True)
         self.codelist = []
         self.authcodelabellist = []
         self.rowlist = []
@@ -17,7 +22,7 @@ class MainWindow(Gtk.Window):
         self.set_title("GTK32FA")
         self.set_default_size(640, 640)
         # make a headerbar for the window
-        headerbar = Gtk.HeaderBar(title="GTK32FA", show_close_button=True)
+        headerbar = Gtk.HeaderBar(title="GTK32FA", subtitle="scuffed early build", show_close_button=True)
         self.set_titlebar(headerbar)
         # headerbar buttons
         headerbarbtn_addcode = Gtk.Button.new_from_icon_name("list-add", Gtk.IconSize.BUTTON)
@@ -39,9 +44,9 @@ class MainWindow(Gtk.Window):
         headerbarbtn_addcode.connect("clicked", self.newcode_clicked, self.codeviewbox)
         code_validation_thread = threading.Thread(target=self.code_checker, daemon=True)
         code_validation_thread.start()
-        #
-        # new code page
-        #
+        # # # # # # # # # 
+        # new code page #
+        # # # # # # # # #
         newcode_layout = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         newcode_layout_horizontal = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         newcode_layout_spacing_h = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
@@ -92,6 +97,8 @@ class MainWindow(Gtk.Window):
         # add pages to stack
         self.stack.add_named(codeview_scolledwindow, "codeviewpage")
         self.stack.add_named(newcode_layout_spacing_v, "newcodepage")
+        # set stack page to codeviewpage
+        self.stack.set_visible_child_name("codeviewpage")
 
     def validator(self, button=None, *data):
         if False in data: 
