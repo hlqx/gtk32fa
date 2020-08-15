@@ -3,6 +3,7 @@
 import gi
 import pyotp as otp
 import threading
+import yaml
 from xdg import XDG_DATA_HOME, XDG_CONFIG_HOME
 from pathlib import Path
 from os import path, mkdir
@@ -105,6 +106,23 @@ class MainWindow(Gtk.Window):
         for folder in datafolder, configfolder:
             if not path.exists(folder):
                 mkdir(folder)
+        storagefile = Path(datafolder / "storage.yaml")
+        if path.exists(storagefile):
+            storage = open(storagefile, "r")
+            yaml_data = yaml.safe_load(storage)
+            i = 1
+            while not i > len(yaml_data):
+                working = list(yaml_data[i])
+                templist = []
+                otpsecret = otp.totp.TOTP(working[2])
+                templist.append(otpsecret.now())
+                templist.append(otpsecret)
+                templist.append(working[0])
+                templist.append(working[1])
+                templist.append(len(self.codelist)+1)
+                self.codelist.append(tuple(templist))
+                self.codeviewbox.add(self.newlistrow(self.codelist[-1], -1))
+                i = i+1
         # set stack page to codeviewpage
         self.stack.set_visible_child_name("codeviewpage")
 
@@ -129,6 +147,7 @@ class MainWindow(Gtk.Window):
         self.newcode_name_entry.set_text("")
         self.newcode_issuer_entry.set_text("")
         self.stack.set_visible_child_name("codeviewpage")
+        print(self.codelist)
 
     def newcode_issuer_buffer_changed(self, entry_buffer=None, pos=None, chars=None, n_chars=None):
         self.issuerok = self.string_entry_buffer_handler(pos=pos, chars=chars, n_chars=n_chars, entry=self.newcode_issuer_entry, buffer=entry_buffer)
