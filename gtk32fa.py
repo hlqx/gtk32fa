@@ -4,10 +4,11 @@ import gi
 import pyotp as otp
 import threading
 from xdg import XDG_DATA_HOME, XDG_CONFIG_HOME
-from os import path
+from pathlib import Path
+from os import path, mkdir
 from time import sleep
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GObject, Gio
+from gi.repository import Gtk
 
 class MainWindow(Gtk.Window):
     def __init__(self):
@@ -15,7 +16,6 @@ class MainWindow(Gtk.Window):
         settings = Gtk.Settings.get_default()
         settings.set_property("gtk-application-prefer-dark-theme", True)
         self.codelist = []
-        self.authcodelabellist = []
         self.rowlist = []
         Gtk.Window.__init__(self)
         # set up window parameters
@@ -97,6 +97,14 @@ class MainWindow(Gtk.Window):
         # add pages to stack
         self.stack.add_named(codeview_scolledwindow, "codeviewpage")
         self.stack.add_named(newcode_layout_spacing_v, "newcodepage")
+        # # # # # # # #
+        # start logic #
+        # # # # # # # # 
+        datafolder = Path(XDG_DATA_HOME / "GTK32FA")
+        configfolder = Path(XDG_CONFIG_HOME / "GTK32FA")
+        for folder in datafolder, configfolder:
+            if not path.exists(folder):
+                mkdir(folder)
         # set stack page to codeviewpage
         self.stack.set_visible_child_name("codeviewpage")
 
@@ -115,7 +123,7 @@ class MainWindow(Gtk.Window):
         authcode = secret.now()
         idnumber = len(self.codelist)+1
         self.codelist.append(tuple((authcode, secret, secret_name, secret_issuer, idnumber)))
-        self.codeviewbox.add(self.newlistrow(self.codelist[-1]))
+        self.codeviewbox.add(self.newlistrow(self.codelist[-1], -1))
         self.codeviewbox.show_all()
         self.newcode_secret_entry.set_text("")
         self.newcode_name_entry.set_text("")
@@ -185,7 +193,7 @@ class MainWindow(Gtk.Window):
                     datalist[0] = datalist[1].now()
                     print("New code for "  + str(self.codelist[index][2]) + " is " + str(self.codelist[index][0]))
                     invalidindexes.append(index)
-                    self.authcodelabellist[index].set_markup(str('<span size="x-large">{}</span>').format(datalist[1].now()))
+                    self.codelist[index][5].set_markup(str('<span size="x-large">{}</span>').format(datalist[1].now()))
                     self.codeviewbox.show_all()
                 sleep(0.2)
             print("List checked. Waiting 15 seconds...")
@@ -194,7 +202,7 @@ class MainWindow(Gtk.Window):
     def newcode_clicked(self, *data):
         self.stack.set_visible_child_name("newcodepage")
 
-    def newlistrow(self, codedata, insertAt=None):
+    def newlistrow(self, codedata, givenindex, insertAt=None):
         coderow = Gtk.ListBoxRow()
         coderow_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         coderow_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -210,10 +218,12 @@ class MainWindow(Gtk.Window):
         secret_issuer_label.set_markup(str('<span style="italic" foreground="darkgray">{}</span>').format(secret_issuer))
         authcode_label = Gtk.Label(xalign=1)
         authcode_label.set_markup(str('<span size="x-large">{}</span>').format(authcode))
-        self.authcodelabellist.append(authcode_label)
+        cd_l = list(codedata)
+        cd_l.append(authcode_label)
+        self.codelist[givenindex] = tuple(cd_l)
         coderow_vbox.pack_start(secret_name_label, True, True, 6)
         coderow_vbox.pack_start(secret_issuer_label, True, True, 6)
-        coderow_vbox2.set_center_widget(self.authcodelabellist[-1])
+        coderow_vbox2.set_center_widget(self.codelist[-1][5])
         coderow.add(coderow_hbox)
         if insertAt is None:
             self.rowlist.append(coderow)
