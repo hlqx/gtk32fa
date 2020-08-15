@@ -4,7 +4,6 @@ import gi
 import pyotp as otp
 import threading
 from time import sleep
-import base64
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GObject, Gio
 
@@ -151,13 +150,16 @@ class MainWindow(Gtk.Window):
     def b32_entry_buffer_handler(self, buffer=None, pos=None, chars=None, n_chars=None, entry=None, var=None):
         if not (buffer.get_text() == ""):
             try:
-                base64.b32decode(buffer.get_text())
+                test = otp.totp.TOTP(buffer.get_text())
+                test.now()
                 var = True
                 entry.set_icon_from_icon_name(Gtk.EntryIconPosition.SECONDARY, None)
                 return var
             except ValueError:
                 entry.set_icon_from_icon_name(Gtk.EntryIconPosition.SECONDARY, "dialog-error")
                 entry.set_icon_tooltip_text(Gtk.EntryIconPosition.SECONDARY, "Not valid Base32.")
+                var = False
+                return var
         else:
             var = False
             return var
