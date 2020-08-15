@@ -111,18 +111,19 @@ class MainWindow(Gtk.Window):
             storage = open(storagefile, "r")
             yaml_data = yaml.safe_load(storage)
             i = 1
-            while not i > len(yaml_data):
-                working = list(yaml_data[i])
-                templist = []
-                otpsecret = otp.totp.TOTP(working[2])
-                templist.append(otpsecret.now())
-                templist.append(otpsecret)
-                templist.append(working[0])
-                templist.append(working[1])
-                templist.append(len(self.codelist)+1)
-                self.codelist.append(tuple(templist))
-                self.codeviewbox.add(self.newlistrow(self.codelist[-1], -1))
-                i = i+1
+            if yaml_data is not None:
+              while not i > len(yaml_data):
+                 working = list(yaml_data[i])
+                 templist = []
+                 otpsecret = otp.totp.TOTP(working[2])
+                 templist.append(otpsecret.now())
+                 templist.append(otpsecret)
+                 templist.append(working[0])
+                 templist.append(working[1])
+                 templist.append(len(self.codelist)+1)
+                 self.codelist.append(tuple(templist))
+                 self.codeviewbox.add(self.newlistrow(self.codelist[-1], -1))
+                 i = i+1
         # set stack page to codeviewpage
         self.stack.set_visible_child_name("codeviewpage")
 
@@ -210,12 +211,14 @@ class MainWindow(Gtk.Window):
                     print("Regenerating code...")
                     datalist = list(self.codelist[index])
                     datalist[0] = datalist[1].now()
+                    self.codelist[index] = tuple(datalist)
+                    print(datalist)
                     print("New code for "  + str(self.codelist[index][2]) + " is " + str(self.codelist[index][0]))
                     invalidindexes.append(index)
+                    print(self.codelist[index][5])
                     self.codelist[index][5].set_markup(str('<span size="x-large">{}</span>').format(datalist[1].now()))
                     self.codeviewbox.show_all()
                 sleep(0.2)
-            print("List checked. Waiting 15 seconds...")
             sleep(1)
 
     def newcode_clicked(self, *data):
