@@ -13,9 +13,10 @@ from gi.repository import Gtk
 
 class MainWindow(Gtk.Window):
     def __init__(self):
-        # settings for theme
-        settings = Gtk.Settings.get_default()
-        settings.set_property("gtk-application-prefer-dark-theme", True)
+        # placeholder for darkmode before config load
+        darkmode = False
+        # self.settings for theme
+        self.settings = Gtk.Settings.get_default()
         self.codelist = []
         self.rowlist = []
         Gtk.Window.__init__(self)
@@ -27,7 +28,9 @@ class MainWindow(Gtk.Window):
         self.set_titlebar(headerbar)
         # headerbar buttons
         headerbarbtn_addcode = Gtk.Button.new_from_icon_name("list-add", Gtk.IconSize.BUTTON)
+        headerbarbtn_darkmode = Gtk.Button.new_from_icon_name("weather-clear-night", Gtk.IconSize.BUTTON)
         headerbar.pack_start(headerbarbtn_addcode)
+        headerbar.pack_end(headerbarbtn_darkmode)
         # connect window close to window fucking dying
         self.connect("destroy", Gtk.main_quit)
         # stack control, make it main widget for window
@@ -42,6 +45,7 @@ class MainWindow(Gtk.Window):
         # add the codeview to the scrolledwindow
         codeview_scolledwindow.add(self.codeviewbox)
         # connect new button to it's function
+        headerbarbtn_darkmode.connect("clicked", self.darkmode_clicked  )
         headerbarbtn_addcode.connect("clicked", self.newcode_clicked, self.codeviewbox)
         code_validation_thread = threading.Thread(target=self.code_checker, daemon=True)
         code_validation_thread.start()
@@ -107,6 +111,41 @@ class MainWindow(Gtk.Window):
             if not path.exists(folder):
                 mkdir(folder)
         storagefile = Path(datafolder / "storage.yaml")
+        self.configfile = Path(configfolder / "config.yaml")
+        if path.exists(self.configfile):
+            init_needed=False
+            config = open(self.configfile, "r")
+            self.configdata = yaml.safe_load(config)
+            if self.configdata["dark-theme"]:
+                self.settings.set_property("gtk-application-prefer-dark-theme", True)
+            else:
+                self.settings.set_property("gtk-application-prefer-dark-theme", False)
+            if "crypto" in self.configdata and self.configdata["crypto"]:
+                cryptoenabled = True
+            else:
+                cryptoenabled = False
+            if "salt" in self.configdata and cryptoenabled == True:
+                cryptosalt = self.configdata["salt"]
+            elif "salt" not in self.configdata and configdata["crypto"]:
+                # something happened to the salt. need to make a new database if this happens, and it's not backed up.
+                pass
+            config.close()
+            # change config test
+            #if darktheme == True:
+            #    darktheme = False
+            #elif darktheme == False:
+            #    darktheme = True
+            # configdata["dark-theme"] = darktheme
+            # config_rw = open(self.configfile, "w")
+            # yaml.dump(configdata, config_rw)
+            # config_rw.close()
+            #configdata["dark-theme"][str(darktheme)] = ["dark-theme"][str(dtt)]
+            #del configdata["dark-theme"][darktheme]
+            # print(configdata)
+            # print(cryptoenabled)
+            #print(cryptosalt)
+        else:
+            init_needed=True
         if path.exists(storagefile):
             storage = open(storagefile, "r")
             yaml_data = yaml.safe_load(storage)
@@ -128,7 +167,23 @@ class MainWindow(Gtk.Window):
         else:
             open(storagefile, "x")
         # set stack page to codeviewpage
+        if not init_needed:
+            print("Init already done. Moving to codeviewpage.")
+            self.stack.set_visible_child_name("codeviewpage")
         self.stack.set_visible_child_name("codeviewpage")
+
+    def darkmode_clicked(self, widget):
+        if self.configdata["dark-theme"]:
+            darktheme = False
+            self.settings.set_property("gtk-application-prefer-dark-theme", False)
+
+        else:
+            self.settings.set_property("gtk-application-prefer-dark-theme", True)
+            darktheme = True
+        pass
+        config_rw = open(self.configfile, "w")
+        self.configdata["dark-theme"] = darktheme
+        yaml.safe_dump(self.configdata, config_rw)
 
     def validator(self, button=None, *data):
         if False in data: 
