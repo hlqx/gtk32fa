@@ -194,7 +194,6 @@ class MainWindow(Gtk.Window):
                 pass
             config.close()
         else:
-            # set init_needed to true
             self.init_needed=True
         if self.init_needed == True:
             self.scriptsetup()
@@ -220,32 +219,28 @@ class MainWindow(Gtk.Window):
         passinput = hashlib.md5(self.decryption_password_buffer.get_text().encode("utf-8")).hexdigest()
         self.cryptokey = base64.urlsafe_b64encode(passinput.encode("utf-8"))
         self.fernetcryptokey = Fernet(self.cryptokey)
-        #str = (self.fernetcryptokey.encrypt(b"lorem ipsum"))
         try:
             self.filedata = StringIO()
             with open(self.storagefile, "rb") as encrypted_storage:
                 encrypted_storage.seek(0)
                 self.filedata.write(self.fernetcryptokey.decrypt(encrypted_storage.read()).decode("utf-8"))
-                print(self.filedata.getvalue())      
+                self.import_storage()
+                self.stack.set_visible_child_name("codeviewpage")
+                self.headerbarbtn_addcode.set_sensitive(True)
         except:
             self.decryption_password_entry.set_text("")
             decrypterrordlg = Gtk.MessageDialog(buttons=Gtk.ButtonsType.OK, modal=True, parent=self)
-            decrypterrordlg.set_markup("<big>Failed to decrypt.</big>")
-            decrypterrordlg.format_secondary_text("The specified decryption key was incorrect. Please try again.")
+            decrypterrordlg.set_markup("<big>Failure</big>")
+            decrypterrordlg.format_secondary_text("Could not open encrypted storage.\nEither the storage is damaged, or the passphrase is incorrect.")
             decrypterrordlg.run()
             decrypterrordlg.destroy()
-        self.import_storage()
-        self.stack.set_visible_child_name("codeviewpage")
-        self.headerbarbtn_addcode.set_sensitive(True)
 
     def commit_file_changes(self, data, encryptionenabled):
         with open(self.storagefile, "wb+") as storage:
             storage.truncate(0)
             if encryptionenabled:
-                print(data)
                 storage.write(self.fernetcryptokey.encrypt(data.encode("utf-8")))
             else:
-                print(data)
                 storage.write(data.encode("utf-8"))
 
     def import_storage(self):
@@ -262,15 +257,14 @@ class MainWindow(Gtk.Window):
     def encryptionsetup_encrypt(self, widget):
         passinput = hashlib.md5(self.encryptionsetup_password_buffer.get_text().encode("utf-8")).hexdigest()
         self.cryptokey = base64.urlsafe_b64encode(passinput.encode("ascii"))
-        print(self.cryptokey)
         self.fernetcryptokey = Fernet(self.cryptokey)
         self.filedata = StringIO()
         self.filedata.write("# GTK32FA\n")
-        print(self.filedata.getvalue())
         self.commit_file_changes(self.filedata.getvalue(), True)
         with open(self.configfile, 'a') as config:
             print("crypto: true", file=config)
             print("dark-theme: false", file=config)
+        self.cryptoenabled = True
         self.headerbarbtn_addcode.set_sensitive(True)
         self.headerbarbtn_darkmode.set_sensitive(True)
         self.stack.set_visible_child_name("codeviewpage")
@@ -280,6 +274,7 @@ class MainWindow(Gtk.Window):
             print("crypto: false", file=config)
             print("dark-theme: false", file=config)
         config = open(self.configfile, "r")
+        self.cryptoenabled = False
         self.configdata = yaml.safe_load(config)
         self.filedata = StringIO()
         self.filedata.write("# GTK32FA\n")
@@ -375,7 +370,6 @@ class MainWindow(Gtk.Window):
     def string_entry_buffer_handler(self, buffer=None, pos=None, chars=None, n_chars=None, entry=None, var=None):
         if not (buffer.get_text() == ""):
             try:
-                
                 if len(buffer.get_text()) > 20:
                     buffer.delete_text(pos, n_chars)
                 var = True
