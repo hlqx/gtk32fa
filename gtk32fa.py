@@ -2,19 +2,19 @@
 # imports
 import gi
 import pyotp as otp
-import threading
-import yaml
+import threading, yaml, base64, hashlib
+from cryptography.fernet import Fernet
 from xdg import XDG_DATA_HOME, XDG_CONFIG_HOME
 from pathlib import Path
-from os import path, mkdir
+from os import path, mkdir, urandom
 from time import sleep
+from io import StringIO
+
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
 class MainWindow(Gtk.Window):
     def __init__(self):
-        # placeholder for darkmode before config load
-        darkmode = False
         # self.settings for theme
         self.settings = Gtk.Settings.get_default()
         self.codelist = []
@@ -24,13 +24,13 @@ class MainWindow(Gtk.Window):
         self.set_title("GTK32FA")
         self.set_default_size(640, 640)
         # make a headerbar for the window
-        headerbar = Gtk.HeaderBar(title="GTK32FA", subtitle="scuffed early build", show_close_button=True)
+        headerbar = Gtk.HeaderBar(title="GTK32FA", subtitle="scuffed slightly less early build", show_close_button=True)
         self.set_titlebar(headerbar)
         # headerbar buttons
-        headerbarbtn_addcode = Gtk.Button.new_from_icon_name("list-add", Gtk.IconSize.BUTTON)
-        headerbarbtn_darkmode = Gtk.Button.new_from_icon_name("weather-clear-night", Gtk.IconSize.BUTTON)
-        headerbar.pack_start(headerbarbtn_addcode)
-        headerbar.pack_end(headerbarbtn_darkmode)
+        self.headerbarbtn_addcode = Gtk.Button.new_from_icon_name("list-add", Gtk.IconSize.BUTTON)
+        self.headerbarbtn_darkmode = Gtk.Button.new_from_icon_name("weather-clear-night", Gtk.IconSize.BUTTON)
+        headerbar.pack_start(self.headerbarbtn_addcode)
+        headerbar.pack_end(self.headerbarbtn_darkmode)
         # connect window close to window fucking dying
         self.connect("destroy", Gtk.main_quit)
         # stack control, make it main widget for window
@@ -45,8 +45,8 @@ class MainWindow(Gtk.Window):
         # add the codeview to the scrolledwindow
         codeview_scolledwindow.add(self.codeviewbox)
         # connect new button to it's function
-        headerbarbtn_darkmode.connect("clicked", self.darkmode_clicked  )
-        headerbarbtn_addcode.connect("clicked", self.newcode_clicked, self.codeviewbox)
+        self.headerbarbtn_darkmode.connect("clicked", self.darkmode_clicked  )
+        self.headerbarbtn_addcode.connect("clicked", self.newcode_clicked, self.codeviewbox)
         code_validation_thread = threading.Thread(target=self.code_checker, daemon=True)
         code_validation_thread.start()
         # # # # # # # # # 
@@ -99,9 +99,68 @@ class MainWindow(Gtk.Window):
         self.newcode_issuer_buffer.connect("deleted-text", self.newcode_issuer_buffer_changed)
         self.newcode_secret_buffer.connect("deleted-text", self.newcode_secret_buffer_changed)
         self.newcode_add_button.connect("clicked", self.newcode_add_button_clicked)
+        # # # # # # # # # # #
+        # set up encryption #
+        # # # # # # # # # # #
+        encryptionsetup_layout = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        encryptionsetup_layout_horizontal = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        encryptionsetup_layout_spacing_h = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        encryptionsetup_layout_spacing_v = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        encryptionsetup_layout_labels = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6, homogeneous=True)
+        encryptionsetup_layout_entries = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        encryptionsetup_buttonbox = Gtk.ButtonBox(orientation=Gtk.Orientation.HORIZONTAL, layout_style=Gtk.ButtonBoxStyle.EXPAND, spacing=0)
+        encryptionsetup_headerlabel = Gtk.Label()
+        encryptionsetup_headerlabel.set_markup('<span size="x-large">Encryption Setup</span>')
+        encryptionsetup_password_label = Gtk.Label(label="Password:", xalign=0)
+        encryptionsetup_confirmpass_label = Gtk.Label(label="Confirm Password:", xalign=0)
+        encryptionsetup_cancel_button = Gtk.Button(label="Don't use encryption")
+        self.encryptionsetup_encrypt_button = Gtk.Button(label="Encrypt", sensitive=False)
+        self.encryptionsetup_encrypt_button.get_style_context().add_class("suggested-action")
+        self.encryptionsetup_password_buffer = Gtk.EntryBuffer()
+        self.encryptionsetup_confirmpass_buffer = Gtk.EntryBuffer()
+        self.encryptionsetup_password_entry = Gtk.Entry(buffer=self.encryptionsetup_password_buffer, visibility=False)
+        self.encryptionsetup_confirmpass_entry = Gtk.Entry(buffer=self.encryptionsetup_confirmpass_buffer, visibility=False)
+        encryptionsetup_layout_spacing_v.set_center_widget(encryptionsetup_layout_spacing_h)
+        encryptionsetup_layout_spacing_h.set_center_widget(encryptionsetup_layout)
+        encryptionsetup_layout.pack_start(encryptionsetup_layout_horizontal, True, True, 6)
+        encryptionsetup_layout.pack_end(encryptionsetup_buttonbox, True, False, 6)
+        encryptionsetup_buttonbox.pack_start(encryptionsetup_cancel_button, True, True, 0)
+        encryptionsetup_buttonbox.pack_end(self.encryptionsetup_encrypt_button, True, True, 0)
+        encryptionsetup_layout_labels.pack_start(encryptionsetup_password_label, True, False, 3)
+        encryptionsetup_layout_labels.pack_start(encryptionsetup_confirmpass_label, True, False, 3)
+        encryptionsetup_layout_entries.pack_start(self.encryptionsetup_password_entry, True, False, 3)
+        encryptionsetup_layout_entries.pack_start(self.encryptionsetup_confirmpass_entry, True, False, 3)
+        encryptionsetup_layout_horizontal.pack_start(encryptionsetup_layout_labels, True, False, 5)
+        encryptionsetup_layout_horizontal.pack_start(encryptionsetup_layout_entries, True, False, 5)
+        # connect encryptionsetup
+        self.encryptionsetup_password_buffer.connect("inserted-text", self.encryptionsetup_passwordconfirm)
+        self.encryptionsetup_password_buffer.connect("deleted-text", self.encryptionsetup_passwordconfirm)
+        self.encryptionsetup_confirmpass_buffer.connect("inserted-text", self.encryptionsetup_passwordconfirm)
+        self.encryptionsetup_confirmpass_buffer.connect("deleted-text", self.encryptionsetup_passwordconfirm)
+        self.encryptionsetup_encrypt_button.connect("clicked", self.encryptionsetup_encrypt)
+        encryptionsetup_cancel_button.connect("clicked", self.encryptionsetup_dontencrypt)
+        # # # # # # # # # # #
+        # decryption screen #
+        # # # # # # # # # # #
+        decryption_layout = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        decryption_layout_spacing_h = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        decryption_layout_spacing_v = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        decryption_layout_spacing_v.set_center_widget(decryption_layout_spacing_h)
+        decryption_layout_spacing_h.set_center_widget(decryption_layout)
+        self.decryption_password_buffer = Gtk.EntryBuffer()
+        self.decryption_password_entry = Gtk.Entry(visibility=False, buffer=self.decryption_password_buffer)
+        self.decrypt_button = Gtk.Button(label="Decrypt", sensitive=False)
+        self.decrypt_button.get_style_context().add_class("suggested-action")
+        decryption_layout.pack_start(self.decryption_password_entry, True, False, 6)
+        decryption_layout.pack_end(self.decrypt_button, True, False, 6)
+        self.decrypt_button.connect("clicked", self.decrypt_clicked)
+        self.decryption_password_buffer.connect("inserted-text", self.decrypt_buffer_change)
+        self.decryption_password_buffer.connect("deleted-text", self.decrypt_buffer_change)
         # add pages to stack
         self.stack.add_named(codeview_scolledwindow, "codeviewpage")
         self.stack.add_named(newcode_layout_spacing_v, "newcodepage")
+        self.stack.add_named(encryptionsetup_layout_spacing_v, "setuppage")
+        self.stack.add_named(decryption_layout_spacing_v, "decryptionpage")
         # # # # # # # #
         # start logic #
         # # # # # # # # 
@@ -110,10 +169,10 @@ class MainWindow(Gtk.Window):
         for folder in datafolder, configfolder:
             if not path.exists(folder):
                 mkdir(folder)
-        storagefile = Path(datafolder / "storage.yaml")
+        self.storagefile = Path(datafolder / "storage.yaml")
         self.configfile = Path(configfolder / "config.yaml")
         if path.exists(self.configfile):
-            init_needed=False
+            self.init_needed=False
             config = open(self.configfile, "r")
             self.configdata = yaml.safe_load(config)
             if self.configdata["dark-theme"]:
@@ -121,62 +180,135 @@ class MainWindow(Gtk.Window):
             else:
                 self.settings.set_property("gtk-application-prefer-dark-theme", False)
             if "crypto" in self.configdata and self.configdata["crypto"]:
-                cryptoenabled = True
+                self.cryptoenabled = True
             else:
-                cryptoenabled = False
-            if "salt" in self.configdata and cryptoenabled == True:
-                cryptosalt = self.configdata["salt"]
-            elif "salt" not in self.configdata and configdata["crypto"]:
+                self.cryptoenabled = False
+                with open(self.storagefile, "rb") as storage:
+                    self.filedata = StringIO(storage.read().decode("utf-8"))
+            if "salt" in self.configdata and self.cryptoenabled == True:
+                # = self.configdata["salt"]
+                pass
+            elif "salt" not in self.configdata and self.configdata["crypto"]:
                 # something happened to the salt. need to make a new database if this happens, and it's not backed up.
+                # tldr; fuck
                 pass
             config.close()
-            # change config test
-            #if darktheme == True:
-            #    darktheme = False
-            #elif darktheme == False:
-            #    darktheme = True
-            # configdata["dark-theme"] = darktheme
-            # config_rw = open(self.configfile, "w")
-            # yaml.dump(configdata, config_rw)
-            # config_rw.close()
-            #configdata["dark-theme"][str(darktheme)] = ["dark-theme"][str(dtt)]
-            #del configdata["dark-theme"][darktheme]
-            # print(configdata)
-            # print(cryptoenabled)
-            #print(cryptosalt)
         else:
-            init_needed=True
-        if path.exists(storagefile):
-            storage = open(storagefile, "r")
-            yaml_data = yaml.safe_load(storage)
-            i = 1
-            if yaml_data is not None:
-              while not i > len(yaml_data):
-                 working = list(yaml_data[i])
-                 templist = []
-                 otpsecret = otp.totp.TOTP(working[2])
-                 templist.append(otpsecret.now())
-                 templist.append(otpsecret)
-                 templist.append(working[0])
-                 templist.append(working[1])
-                 templist.append(len(self.codelist)+1)
-                 self.codelist.append(tuple(templist))
-                 self.codeviewbox.add(self.newlistrow(self.codelist[-1], -1))
-                 i = i+1
-            storage.close()
+            # set init_needed to true
+            self.init_needed=True
+        if self.init_needed == True:
+            self.scriptsetup()
+        if not self.init_needed and not self.cryptoenabled:
+            if path.exists(self.storagefile):
+                self.import_storage()
+            else:
+                open(self.storagefile, "x")
+        elif not self.init_needed and self.cryptoenabled:
+            self.headerbarbtn_addcode.set_sensitive(False)
+            self.stack.get_child_by_name("decryptionpage").set_visible(True)
+            self.stack.set_visible_child_name("decryptionpage")
+        elif not self.init_needed and not self.cryptoenabled:
+            self.import_storage()
+
+    def decrypt_buffer_change(self, *data):
+        if self.decryption_password_buffer.get_text() == "":
+            self.decrypt_button.set_sensitive(False)
         else:
-            open(storagefile, "x")
-        # set stack page to codeviewpage
-        if not init_needed:
-            print("Init already done. Moving to codeviewpage.")
+            self.decrypt_button.set_sensitive(True)
+
+    def decrypt_clicked(self, widget):
+        passinput = hashlib.md5(self.decryption_password_buffer.get_text().encode("utf-8")).hexdigest()
+        self.cryptokey = base64.urlsafe_b64encode(passinput.encode("utf-8"))
+        self.fernetcryptokey = Fernet(self.cryptokey)
+        #str = (self.fernetcryptokey.encrypt(b"lorem ipsum"))
+        try:
+            with open(self.storagefile, "rb") as encrypted_storage:
+                print(self.fernetcryptokey.decrypt(encrypted_storage.read()).decode("utf-8"))                
+            #self.import_storage()
             self.stack.set_visible_child_name("codeviewpage")
+            self.headerbarbtn_addcode.set_sensitive(True)
+        except:
+            self.decryption_password_entry.set_text("")
+            decrypterrordlg = Gtk.MessageDialog(buttons=Gtk.ButtonsType.OK, modal=True, parent=self)
+            decrypterrordlg.set_markup("<big>Failed to decrypt.</big>")
+            decrypterrordlg.format_secondary_text("The specified decryption key was incorrect. Please try again.")
+            decrypterrordlg.run()
+            decrypterrordlg.destroy()
+
+    def commit_file_changes(self, data, encryptionenabled):
+        with open(self.storagefile, "wb+") as storage:
+            if encryptionenabled:
+                storage.write(self.fernetcryptokey.encrypt(data.encode("utf-8")))
+            else:
+                storage.write(data.encode("utf-8"))
+
+    def import_storage(self):
+        yaml_data = yaml.safe_load(self.filedata.read())
+        print(yaml_data)
+        i = 1
+        if yaml_data is not None:
+            while not i > len(yaml_data):
+                working = list(yaml_data[i])
+                templist = []
+                otpsecret = otp.totp.TOTP(working[2])
+                templist.append(otpsecret.now())
+                templist.append(otpsecret)
+                templist.append(working[0])
+                templist.append(working[1])
+                templist.append(len(self.codelist)+1)
+                self.codelist.append(tuple(templist))
+                self.codeviewbox.add(self.newlistrow(self.codelist[-1], -1))
+                i = i+1
+
+    def encryptionsetup_encrypt(self, widget):
+        passinput = hashlib.md5(self.encryptionsetup_password_buffer.get_text().encode("utf-8")).hexdigest()
+        self.cryptokey = base64.urlsafe_b64encode(passinput.encode("ascii"))
+        print(self.cryptokey)
+        self.fernetcryptokey = Fernet(self.cryptokey)
+        self.filedata = StringIO()
+        self.filedata.write("# GTK32FA")
+        print(self.filedata.getvalue())
+        self.commit_file_changes(self.filedata.read(), True)
+        with open(self.configfile, 'a') as config:
+            print("crypto: true", file=config)
+            print("dark-theme: false", file=config)
+        self.headerbarbtn_addcode.set_sensitive(True)
+        self.headerbarbtn_darkmode.set_sensitive(True)
         self.stack.set_visible_child_name("codeviewpage")
+
+    def encryptionsetup_dontencrypt(self, widget):
+        with open(self.configfile, 'a') as config:
+            print("crypto: false", file=config)
+            print("dark-theme: false", file=config)
+        config = open(self.configfile, "r")
+        self.configdata = yaml.safe_load(config)
+        self.filedata = StringIO()
+        self.filedata.write("# GTK32FA\n")
+        self.commit_file_changes(self.filedata.read(), False)
+        config.close()
+        self.headerbarbtn_addcode.set_sensitive(True)
+        self.headerbarbtn_darkmode.set_sensitive(True)
+        self.stack.set_visible_child_name("codeviewpage")
+
+    def encryptionsetup_passwordconfirm(self, *data):
+        if self.encryptionsetup_password_buffer.get_text() == self.encryptionsetup_confirmpass_buffer.get_text():
+            self.encryptionsetup_encrypt_button.set_sensitive(True)
+            self.encryptionsetup_password_entry.set_icon_from_icon_name(Gtk.EntryIconPosition.SECONDARY, None)
+        else:
+            self.encryptionsetup_encrypt_button.set_sensitive(False)
+            self.encryptionsetup_password_entry.set_icon_from_icon_name(Gtk.EntryIconPosition.SECONDARY, "dialog-error")
+            self.encryptionsetup_password_entry.set_icon_tooltip_text(Gtk.EntryIconPosition.SECONDARY, "Inputs do not match.")
+
+    def scriptsetup(self):
+        self.headerbarbtn_addcode.set_sensitive(False)
+        self.headerbarbtn_darkmode.set_sensitive(False)
+        self.stack.get_child_by_name("setuppage").set_visible(True)
+        self.stack.set_visible_child_name("setuppage")
 
     def darkmode_clicked(self, widget):
         if self.configdata["dark-theme"]:
             darktheme = False
             self.settings.set_property("gtk-application-prefer-dark-theme", False)
-
         else:
             self.settings.set_property("gtk-application-prefer-dark-theme", True)
             darktheme = True
@@ -184,6 +316,7 @@ class MainWindow(Gtk.Window):
         config_rw = open(self.configfile, "w")
         self.configdata["dark-theme"] = darktheme
         yaml.safe_dump(self.configdata, config_rw)
+        config_rw.close()
 
     def validator(self, button=None, *data):
         if False in data: 
@@ -209,20 +342,13 @@ class MainWindow(Gtk.Window):
         self.stack.set_visible_child_name("codeviewpage")
 
     def update_yaml(self, data, secretstring):
-        yaml_add=("""
-{}:
-  - {}
-  - {}
-  - {}
-        """).format(data[4], data[2], data[3], secretstring)
-        while True:
-            try:
-                with open(Path(XDG_DATA_HOME / "GTK32FA" / "storage.yaml"), "a") as yamlfile:
-                    print(yaml_add, file=yamlfile)
-                    yamlfile.close()
-                    break
-            except FileNotFoundError:
-                open(Path(XDG_DATA_HOME / "GTK32FA" / "storage.yaml", 'x'))
+        #.format(data[4], data[2], data[3], secretstring
+        yamlstr = str("\n{}:\n  - {}\n  - {}\n  - {}").format(data[4], data[2], data[3], secretstring)
+        self.filedata.write(yamlstr)
+        if self.cryptoenabled:
+            self.commit_file_changes(self.filedata.getvalue(), True)
+        elif not self.cryptoenabled:
+            self.commit_file_changes(self.filedata.getvalue(), False)
         
 
     def newcode_issuer_buffer_changed(self, entry_buffer=None, pos=None, chars=None, n_chars=None):
@@ -278,19 +404,13 @@ class MainWindow(Gtk.Window):
         while True:
             invalidindexes = []
             for index in range(len(self.codelist)):
-                print("Confirming code at indexno" + str(index))
                 if (self.codelist[index][1].verify(self.codelist[index][0])):
-                    print("OTP Code " + str(self.codelist[index][0]) + " at list index number" + str(index) + " is valid.")
+                    pass
                 else:
-                    print("OTP Code " + str(self.codelist[index][0]) + " at list index number" + str(index) + " is invalid.")
-                    print("Regenerating code...")
                     datalist = list(self.codelist[index])
                     datalist[0] = datalist[1].now()
                     self.codelist[index] = tuple(datalist)
-                    print(datalist)
-                    print("New code for "  + str(self.codelist[index][2]) + " is " + str(self.codelist[index][0]))
                     invalidindexes.append(index)
-                    print(self.codelist[index][5])
                     self.codelist[index][5].set_markup(str('<span size="x-large">{}</span>').format(datalist[1].now()))
                     self.codeviewbox.show_all()
                 sleep(0.2)
@@ -327,12 +447,6 @@ class MainWindow(Gtk.Window):
         else:
             self.rowlist.insert(insertAt, coderow)
         return self.rowlist[-1]
-
-class DecryptionWindow(Gtk.Window):
-    def __init__(self):
-        Gtk.Window.__init__(self)
-        # stub
-
 
 # show the starting window
 #GObject.threads_init()
