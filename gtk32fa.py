@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# imports
 import gi
 import pyotp as otp
 import threading, yaml, base64, hashlib
@@ -9,7 +8,6 @@ from pathlib import Path
 from os import path, mkdir, urandom
 from time import sleep
 from io import StringIO
-
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
@@ -24,7 +22,7 @@ class MainWindow(Gtk.Window):
         self.set_title("GTK32FA")
         self.set_default_size(640, 640)
         # make a headerbar for the window
-        headerbar = Gtk.HeaderBar(title="GTK32FA", subtitle="scuffed slightly less early build", show_close_button=True)
+        headerbar = Gtk.HeaderBar(title="GTK32FA", show_close_button=True)
         self.set_titlebar(headerbar)
         # headerbar buttons
         self.headerbarbtn_addcode = Gtk.Button.new_from_icon_name("list-add", Gtk.IconSize.BUTTON)
@@ -231,7 +229,7 @@ class MainWindow(Gtk.Window):
             self.decryption_password_entry.set_text("")
             decrypterrordlg = Gtk.MessageDialog(buttons=Gtk.ButtonsType.OK, modal=True, parent=self)
             decrypterrordlg.set_markup("<big>Failure</big>")
-            decrypterrordlg.format_secondary_text("Could not open encrypted storage.\nEither the storage is damaged, or the passphrase is incorrect.")
+            decrypterrordlg.format_secondary_text("Could not open encrypted storage.\nEither the storage is damaged, or the passphrase is incorrect.\n\nIf you've forgotten the password, you can delete:\n{}/GTK32FA/config.yaml\nand the storage will be recreated on next launch.".format(str(XDG_CONFIG_HOME)))
             decrypterrordlg.run()
             decrypterrordlg.destroy()
 
@@ -264,6 +262,8 @@ class MainWindow(Gtk.Window):
         with open(self.configfile, 'a') as config:
             print("crypto: true", file=config)
             print("dark-theme: false", file=config)
+        config = open(self.configfile, "r")
+        self.configdata = yaml.safe_load(config)
         self.cryptoenabled = True
         self.headerbarbtn_addcode.set_sensitive(True)
         self.headerbarbtn_darkmode.set_sensitive(True)
@@ -274,8 +274,8 @@ class MainWindow(Gtk.Window):
             print("crypto: false", file=config)
             print("dark-theme: false", file=config)
         config = open(self.configfile, "r")
-        self.cryptoenabled = False
         self.configdata = yaml.safe_load(config)
+        self.cryptoenabled = False
         self.filedata = StringIO()
         self.filedata.write("# GTK32FA\n")
         self.commit_file_changes(self.filedata.getvalue(), False)
