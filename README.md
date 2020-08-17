@@ -12,6 +12,5 @@ Ext module dependencies:
 - pyyaml
 - cryptography
 
-!!: Encryption does not work yet. Application functions as intended if you opt not to use it. To reset any changes, remove config.yaml in XDG_CONFIG_HOME/GTK32FA.
+restart script after encrypting/notencrypting on first run. adding a 2fa code that point will fail rn
 
-!!: Can't remove codes yet.

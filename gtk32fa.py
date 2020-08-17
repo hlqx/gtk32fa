@@ -222,11 +222,11 @@ class MainWindow(Gtk.Window):
         self.fernetcryptokey = Fernet(self.cryptokey)
         #str = (self.fernetcryptokey.encrypt(b"lorem ipsum"))
         try:
+            self.filedata = StringIO()
             with open(self.storagefile, "rb") as encrypted_storage:
-                print(self.fernetcryptokey.decrypt(encrypted_storage.read()).decode("utf-8"))                
-            #self.import_storage()
-            self.stack.set_visible_child_name("codeviewpage")
-            self.headerbarbtn_addcode.set_sensitive(True)
+                encrypted_storage.seek(0)
+                self.filedata.write(self.fernetcryptokey.decrypt(encrypted_storage.read()).decode("utf-8"))
+                print(self.filedata.getvalue())      
         except:
             self.decryption_password_entry.set_text("")
             decrypterrordlg = Gtk.MessageDialog(buttons=Gtk.ButtonsType.OK, modal=True, parent=self)
@@ -234,31 +234,30 @@ class MainWindow(Gtk.Window):
             decrypterrordlg.format_secondary_text("The specified decryption key was incorrect. Please try again.")
             decrypterrordlg.run()
             decrypterrordlg.destroy()
+        self.import_storage()
+        self.stack.set_visible_child_name("codeviewpage")
+        self.headerbarbtn_addcode.set_sensitive(True)
 
     def commit_file_changes(self, data, encryptionenabled):
         with open(self.storagefile, "wb+") as storage:
+            storage.truncate(0)
             if encryptionenabled:
+                print(data)
                 storage.write(self.fernetcryptokey.encrypt(data.encode("utf-8")))
             else:
+                print(data)
                 storage.write(data.encode("utf-8"))
 
     def import_storage(self):
-        yaml_data = yaml.safe_load(self.filedata.read())
-        print(yaml_data)
-        i = 1
+        yaml_data = yaml.safe_load(self.filedata.getvalue())
         if yaml_data is not None:
-            while not i > len(yaml_data):
-                working = list(yaml_data[i])
-                templist = []
-                otpsecret = otp.totp.TOTP(working[2])
-                templist.append(otpsecret.now())
-                templist.append(otpsecret)
-                templist.append(working[0])
-                templist.append(working[1])
-                templist.append(len(self.codelist)+1)
-                self.codelist.append(tuple(templist))
+            for i in range(len(yaml_data)):
+                secret = otp.totp.TOTP(yaml_data[i][0])
+                authcode = secret.now()
+                idnumber = len(self.codelist)+1
+                self.codelist.append(tuple((authcode, secret, yaml_data[i][1], yaml_data[i][2], idnumber, yaml_data[i][0])))
                 self.codeviewbox.add(self.newlistrow(self.codelist[-1], -1))
-                i = i+1
+                self.codeviewbox.show_all()
 
     def encryptionsetup_encrypt(self, widget):
         passinput = hashlib.md5(self.encryptionsetup_password_buffer.get_text().encode("utf-8")).hexdigest()
@@ -266,9 +265,9 @@ class MainWindow(Gtk.Window):
         print(self.cryptokey)
         self.fernetcryptokey = Fernet(self.cryptokey)
         self.filedata = StringIO()
-        self.filedata.write("# GTK32FA")
+        self.filedata.write("# GTK32FA\n")
         print(self.filedata.getvalue())
-        self.commit_file_changes(self.filedata.read(), True)
+        self.commit_file_changes(self.filedata.getvalue(), True)
         with open(self.configfile, 'a') as config:
             print("crypto: true", file=config)
             print("dark-theme: false", file=config)
@@ -284,7 +283,7 @@ class MainWindow(Gtk.Window):
         self.configdata = yaml.safe_load(config)
         self.filedata = StringIO()
         self.filedata.write("# GTK32FA\n")
-        self.commit_file_changes(self.filedata.read(), False)
+        self.commit_file_changes(self.filedata.getvalue(), False)
         config.close()
         self.headerbarbtn_addcode.set_sensitive(True)
         self.headerbarbtn_darkmode.set_sensitive(True)
@@ -327,12 +326,13 @@ class MainWindow(Gtk.Window):
             return True
 
     def newcode_add_button_clicked(self, widget):
+        secret_plaintext = self.newcode_secret_buffer.get_text()
         secret = otp.totp.TOTP(self.newcode_secret_buffer.get_text())
         secret_issuer = self.newcode_issuer_buffer.get_text()
         secret_name = self.newcode_name_buffer.get_text()
         authcode = secret.now()
         idnumber = len(self.codelist)+1
-        self.codelist.append(tuple((authcode, secret, secret_name, secret_issuer, idnumber)))
+        self.codelist.append(tuple((authcode, secret, secret_name, secret_issuer, idnumber, secret_plaintext)))
         self.codeviewbox.add(self.newlistrow(self.codelist[-1], -1))
         self.codeviewbox.show_all()
         self.update_yaml(self.codelist[-1], self.newcode_secret_buffer.get_text())
@@ -342,14 +342,17 @@ class MainWindow(Gtk.Window):
         self.stack.set_visible_child_name("codeviewpage")
 
     def update_yaml(self, data, secretstring):
-        #.format(data[4], data[2], data[3], secretstring
-        yamlstr = str("\n{}:\n  - {}\n  - {}\n  - {}").format(data[4], data[2], data[3], secretstring)
+        storage_codelist = []
+        for i in range(len(self.codelist)):
+            storage_codelist.append(tuple((self.codelist[i][5], self.codelist[i][2], self.codelist[i][3])))
+        yamlstr = yaml.safe_dump(storage_codelist)
+        self.filedata.close()
+        self.filedata = StringIO()
         self.filedata.write(yamlstr)
         if self.cryptoenabled:
             self.commit_file_changes(self.filedata.getvalue(), True)
         elif not self.cryptoenabled:
             self.commit_file_changes(self.filedata.getvalue(), False)
-        
 
     def newcode_issuer_buffer_changed(self, entry_buffer=None, pos=None, chars=None, n_chars=None):
         self.issuerok = self.string_entry_buffer_handler(pos=pos, chars=chars, n_chars=n_chars, entry=self.newcode_issuer_entry, buffer=entry_buffer)
@@ -393,7 +396,7 @@ class MainWindow(Gtk.Window):
                 return var
             except ValueError:
                 entry.set_icon_from_icon_name(Gtk.EntryIconPosition.SECONDARY, "dialog-error")
-                entry.set_icon_tooltip_text(Gtk.EntryIconPosition.SECONDARY, "Not valid Base32.")
+                entry.set_icon_tooltip_text(Gtk.EntryIconPosition.SECONDARY, "Not a valid secret.")
                 var = False
                 return var
         else:
@@ -411,7 +414,7 @@ class MainWindow(Gtk.Window):
                     datalist[0] = datalist[1].now()
                     self.codelist[index] = tuple(datalist)
                     invalidindexes.append(index)
-                    self.codelist[index][5].set_markup(str('<span size="x-large">{}</span>').format(datalist[1].now()))
+                    self.codelist[index][6].set_markup(str('<span size="x-large">{}</span>').format(datalist[1].now()))
                     self.codeviewbox.show_all()
                 sleep(0.2)
             sleep(1)
@@ -440,7 +443,7 @@ class MainWindow(Gtk.Window):
         self.codelist[givenindex] = tuple(cd_l)
         coderow_vbox.pack_start(secret_name_label, True, True, 6)
         coderow_vbox.pack_start(secret_issuer_label, True, True, 6)
-        coderow_vbox2.set_center_widget(self.codelist[-1][5])
+        coderow_vbox2.set_center_widget(self.codelist[-1][6])
         coderow.add(coderow_hbox)
         if insertAt is None:
             self.rowlist.append(coderow)
