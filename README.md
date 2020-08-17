@@ -10,11 +10,8 @@ Ext module dependencies:
 - xdg
 - pyotp
 - pyyaml
+- cryptography
 
+!!: Encryption does not work yet. Application functions as intended if you opt not to use it. To reset any changes, remove config.yaml in XDG_CONFIG_HOME/GTK32FA.
 
----
-
-Note: storage.yaml must be manually constructed rn. no encryption. application WILL NOT save changes. example yaml is included
-
-Note: script will make its directories in XDG_DATA_HOME/GTK32FA and XDG_CONFIG_HOME/GTK32FA. Looks for storage at XDG_DATA_HOME/GTK32FA/storage.yaml
-
+!!: Can't remove codes yet.
