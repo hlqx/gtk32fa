@@ -1,9 +1,11 @@
 # GTK32FA
 ## 2 Factor Authentication Wallet
 ---
-This is very WIP.
-
-It is also very bad.
+Features:
+- Can remember things
+- Has encryption that probably works
+- Is janky
+- Only supports TOTP
 
 Ext module dependencies:
 - pygobject
@@ -11,6 +13,3 @@ Ext module dependencies:
 - pyotp
 - pyyaml
 - cryptography
-
-restart script after encrypting/notencrypting on first run. adding a 2fa code that point will fail rn
-
