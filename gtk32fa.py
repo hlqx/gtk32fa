@@ -436,7 +436,7 @@ class MainWindow(Gtk.Window):
                     self.codelist[index][5][0].set_markup(str('<span size="x-large">{}</span>').format(datalist[1].now()))
                     self.codelist[index][5][1].set_markup(str('<span size="x-large">{}</span>').format(datalist[1].now()))
                     self.codeviewbox.show_all()
-                sleep(0.2)
+                #sleep(0.2)
             sleep(1)
 
     def newcode_clicked(self, *data):
@@ -444,24 +444,35 @@ class MainWindow(Gtk.Window):
         self.headerbarbtn_addcode.set_sensitive(False)
         self.stack.set_visible_child_name("newcodepage")
 
-
     def delbutton_pressed(self, widget):
-        for i in range(len(self.codelist)):
-            if self.codelist[i][6] == widget:
-                self.codelist[i][7].destroy()
-                self.codelist.pop(i)
-                self.update_yaml()
-                break
-        if len(self.codelist) >= 1:
-            self.headerbarbtn_editmode.set_sensitive(True)
+        confirmdlg = Gtk.MessageDialog(parent=self, modal=True, buttons=Gtk.ButtonsType.YES_NO)
+        confirmdlg.set_markup("<big>Confirmation</big>")
+        confirmdlg.format_secondary_text("Are you sure you want to remove this code?")
+        resp = confirmdlg.run()
+        if resp == Gtk.ResponseType.YES:
+            confirmdlg.destroy()
+            for i in range(len(self.codelist)):
+                if self.codelist[i][6] == widget:
+                    self.codelist[i][7].destroy()
+                    self.codelist.pop(i)
+                    self.update_yaml()
+                    break
+            if len(self.codelist) >= 1:
+                self.headerbarbtn_editmode.set_sensitive(True)
+            else:
+                self.editmode = False
+                self.headerbarbtn_editmode.set_active(False)
         else:
-            self.editmode = False
-            self.headerbarbtn_editmode.set_active(False)
+                confirmdlg.destroy()
+
+    def editbutton_pressed(self, widget):
+        print("edit pressed for obj:")
+        print(widget)
 
     def newlistrow(self, codedata, givenindex, insertAt=None):
         coderow = Gtk.ListBoxRow()
         codestack = Gtk.Stack()
-        codestack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
+        codestack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
         #
         # STACK1
         #
@@ -494,9 +505,12 @@ class MainWindow(Gtk.Window):
         authcode_labels2 = Gtk.Label(xalign=1)
         authcode_labels2.set_markup(str('<span size="x-large">{}</span>').format(authcode))
         rightlayouts2 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        delbutton = Gtk.Button(label="Delete")
-        delbutton.get_style_context().add_class("destructive-action")
+        delbutton = Gtk.Button.new_from_icon_name("edit-delete", Gtk.IconSize.BUTTON)
+        delbutton.get_style_context().add_class("circular")
         delbutton.connect("clicked", self.delbutton_pressed)
+        editbutton = Gtk.Button.new_from_icon_name("edit", Gtk.IconSize.BUTTON)
+        editbutton.get_style_context().add_class("circular")
+        editbutton.connect("clicked", self.editbutton_pressed)
         #
         # APPEND AUTHCODE LABELS LIST AS TUPLE AT [5][range(0,1)]
         #
@@ -504,6 +518,7 @@ class MainWindow(Gtk.Window):
         cd_l.append(tuple((authcode_label, authcode_labels2)))
         cd_l.append(delbutton)
         cd_l.append(codestack)
+        cd_l.append(editbutton)
         self.codelist[givenindex] = tuple(cd_l)
         #
         # PACKING STACK1
@@ -517,8 +532,9 @@ class MainWindow(Gtk.Window):
         coderow_vboxs2.pack_start(secret_name_labels2, True, True, 6)
         coderow_vboxs2.pack_start(secret_issuer_labels2, True, True, 6)
         coderow_vbox2s2.set_center_widget(rightlayouts2)
-        rightlayouts2.pack_start(self.codelist[-1][5][1], True, True, 0)
-        rightlayouts2.pack_start(self.codelist[-1][6], False, False, 6)
+        rightlayouts2.pack_start(self.codelist[-1][5][1], True, True, 0) #authcode
+        rightlayouts2.pack_start(self.codelist[-1][8], False, False, 3) #edit
+        rightlayouts2.pack_start(self.codelist[-1][6], False, False, 3) #delete
         #
         # ADD STACKS TO STACK
         #
