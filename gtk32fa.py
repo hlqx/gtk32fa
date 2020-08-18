@@ -27,7 +27,9 @@ class MainWindow(Gtk.Window):
         # headerbar buttons
         self.headerbarbtn_addcode = Gtk.Button.new_from_icon_name("list-add", Gtk.IconSize.BUTTON)
         self.headerbarbtn_darkmode = Gtk.Button.new_from_icon_name("weather-clear-night", Gtk.IconSize.BUTTON)
+        self.headerbarbtn_editmode = Gtk.ToggleButton(label="Edit", sensitive=False)
         headerbar.pack_start(self.headerbarbtn_addcode)
+        headerbar.pack_start(self.headerbarbtn_editmode)
         headerbar.pack_end(self.headerbarbtn_darkmode)
         # connect window close to window fucking dying
         self.connect("destroy", Gtk.main_quit)
@@ -45,6 +47,7 @@ class MainWindow(Gtk.Window):
         # connect new button to it's function
         self.headerbarbtn_darkmode.connect("clicked", self.darkmode_clicked  )
         self.headerbarbtn_addcode.connect("clicked", self.newcode_clicked, self.codeviewbox)
+        self.headerbarbtn_editmode.connect("clicked", self.editmode_clicked)
         code_validation_thread = threading.Thread(target=self.code_checker, daemon=True)
         code_validation_thread.start()
         # # # # # # # # # 
@@ -162,6 +165,9 @@ class MainWindow(Gtk.Window):
         # # # # # # # #
         # start logic #
         # # # # # # # # 
+        self.editmode = False
+        if len(self.codelist) >= 1:
+            self.headerbarbtn_editmode.set_sensitive(True)
         datafolder = Path(XDG_DATA_HOME / "GTK32FA")
         configfolder = Path(XDG_CONFIG_HOME / "GTK32FA")
         for folder in datafolder, configfolder:
@@ -188,7 +194,6 @@ class MainWindow(Gtk.Window):
                 pass
             elif "salt" not in self.configdata and self.configdata["crypto"]:
                 # something happened to the salt. need to make a new database if this happens, and it's not backed up.
-                # tldr; fuck
                 pass
             config.close()
         else:
@@ -207,6 +212,16 @@ class MainWindow(Gtk.Window):
         elif not self.init_needed and not self.cryptoenabled:
             self.import_storage()
 
+    def editmode_clicked(self, widget):
+        if widget.get_active() == True:
+            for i in range(len(self.codelist)):
+                self.codelist[i][7].set_visible_child_name("s2")
+                self.editmode = True
+        else:
+            for i in range(len(self.codelist)):
+                self.codelist[i][7].set_visible_child_name("s1")
+                self.editmode = False
+
     def decrypt_buffer_change(self, *data):
         if self.decryption_password_buffer.get_text() == "":
             self.decrypt_button.set_sensitive(False)
@@ -224,6 +239,8 @@ class MainWindow(Gtk.Window):
                 self.filedata.write(self.fernetcryptokey.decrypt(encrypted_storage.read()).decode("utf-8"))
                 self.import_storage()
                 self.stack.set_visible_child_name("codeviewpage")
+                if len(self.codelist) >= 1:
+                    self.headerbarbtn_editmode.set_sensitive(True)
                 self.headerbarbtn_addcode.set_sensitive(True)
         except:
             self.decryption_password_entry.set_text("")
@@ -247,10 +264,11 @@ class MainWindow(Gtk.Window):
             for i in range(len(yaml_data)):
                 secret = otp.totp.TOTP(yaml_data[i][0])
                 authcode = secret.now()
-                idnumber = len(self.codelist)+1
-                self.codelist.append(tuple((authcode, secret, yaml_data[i][1], yaml_data[i][2], idnumber, yaml_data[i][0])))
+                self.codelist.append(tuple((authcode, secret, yaml_data[i][1], yaml_data[i][2], yaml_data[i][0])))
                 self.codeviewbox.add(self.newlistrow(self.codelist[-1], -1))
                 self.codeviewbox.show_all()
+        if len(self.codelist) >= 1:
+            self.headerbarbtn_editmode.set_sensitive(True)
 
     def encryptionsetup_encrypt(self, widget):
         passinput = hashlib.md5(self.encryptionsetup_password_buffer.get_text().encode("utf-8")).hexdigest()
@@ -267,6 +285,7 @@ class MainWindow(Gtk.Window):
         self.cryptoenabled = True
         self.headerbarbtn_addcode.set_sensitive(True)
         self.headerbarbtn_darkmode.set_sensitive(True)
+        self.headerbarbtn_editmode.set_sensitive(False)
         self.stack.set_visible_child_name("codeviewpage")
 
     def encryptionsetup_dontencrypt(self, widget):
@@ -282,6 +301,7 @@ class MainWindow(Gtk.Window):
         config.close()
         self.headerbarbtn_addcode.set_sensitive(True)
         self.headerbarbtn_darkmode.set_sensitive(True)
+        self.headerbarbtn_editmode.set_sensitive(False)
         self.stack.set_visible_child_name("codeviewpage")
 
     def encryptionsetup_passwordconfirm(self, *data):
@@ -326,20 +346,22 @@ class MainWindow(Gtk.Window):
         secret_issuer = self.newcode_issuer_buffer.get_text()
         secret_name = self.newcode_name_buffer.get_text()
         authcode = secret.now()
-        idnumber = len(self.codelist)+1
-        self.codelist.append(tuple((authcode, secret, secret_name, secret_issuer, idnumber, secret_plaintext)))
+        self.codelist.append(tuple((authcode, secret, secret_name, secret_issuer, secret_plaintext)))
         self.codeviewbox.add(self.newlistrow(self.codelist[-1], -1))
         self.codeviewbox.show_all()
-        self.update_yaml(self.codelist[-1], self.newcode_secret_buffer.get_text())
+        self.update_yaml()
         self.newcode_secret_entry.set_text("")
         self.newcode_name_entry.set_text("")
         self.newcode_issuer_entry.set_text("")
+        self.headerbarbtn_addcode.set_sensitive(True)
+        if len(self.codelist) >= 1:
+            self.headerbarbtn_editmode.set_sensitive(True)
         self.stack.set_visible_child_name("codeviewpage")
 
-    def update_yaml(self, data, secretstring):
+    def update_yaml(self):
         storage_codelist = []
         for i in range(len(self.codelist)):
-            storage_codelist.append(tuple((self.codelist[i][5], self.codelist[i][2], self.codelist[i][3])))
+            storage_codelist.append(tuple((self.codelist[i][4], self.codelist[i][2], self.codelist[i][3])))
         yamlstr = yaml.safe_dump(storage_codelist)
         self.filedata.close()
         self.filedata = StringIO()
@@ -366,6 +388,9 @@ class MainWindow(Gtk.Window):
         self.newcode_name_entry.set_text("")
         self.newcode_issuer_entry.set_text("")
         self.newcode_secret_entry.set_text("")
+        if len(self.codelist) >= 1:
+            self.headerbarbtn_editmode.set_sensitive(True)
+        self.headerbarbtn_addcode.set_sensitive(True)
 
     def string_entry_buffer_handler(self, buffer=None, pos=None, chars=None, n_chars=None, entry=None, var=None):
         if not (buffer.get_text() == ""):
@@ -408,16 +433,38 @@ class MainWindow(Gtk.Window):
                     datalist[0] = datalist[1].now()
                     self.codelist[index] = tuple(datalist)
                     invalidindexes.append(index)
-                    self.codelist[index][6].set_markup(str('<span size="x-large">{}</span>').format(datalist[1].now()))
+                    self.codelist[index][5][0].set_markup(str('<span size="x-large">{}</span>').format(datalist[1].now()))
+                    self.codelist[index][5][1].set_markup(str('<span size="x-large">{}</span>').format(datalist[1].now()))
                     self.codeviewbox.show_all()
                 sleep(0.2)
             sleep(1)
 
     def newcode_clicked(self, *data):
+        self.headerbarbtn_editmode.set_sensitive(False)
+        self.headerbarbtn_addcode.set_sensitive(False)
         self.stack.set_visible_child_name("newcodepage")
+
+
+    def delbutton_pressed(self, widget):
+        for i in range(len(self.codelist)):
+            if self.codelist[i][6] == widget:
+                self.codelist[i][7].destroy()
+                self.codelist.pop(i)
+                self.update_yaml()
+                break
+        if len(self.codelist) >= 1:
+            self.headerbarbtn_editmode.set_sensitive(True)
+        else:
+            self.editmode = False
+            self.headerbarbtn_editmode.set_active(False)
 
     def newlistrow(self, codedata, givenindex, insertAt=None):
         coderow = Gtk.ListBoxRow()
+        codestack = Gtk.Stack()
+        codestack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
+        #
+        # STACK1
+        #
         coderow_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         coderow_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         coderow_vbox2 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -432,13 +479,55 @@ class MainWindow(Gtk.Window):
         secret_issuer_label.set_markup(str('<span style="italic" foreground="darkgray">{}</span>').format(secret_issuer))
         authcode_label = Gtk.Label(xalign=1)
         authcode_label.set_markup(str('<span size="x-large">{}</span>').format(authcode))
+        #
+        # STACK 2
+        #
+        coderow_hboxs2 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        coderow_vboxs2 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        coderow_vbox2s2 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        coderow_hboxs2.pack_start(coderow_vboxs2, False, True, 6)
+        coderow_hboxs2.pack_end(coderow_vbox2s2, False, True, 6)
+        secret_name_labels2 = Gtk.Label(xalign=0)
+        secret_name_labels2.set_markup(str('<span style="normal" size="large">{}</span>').format(secret_name))
+        secret_issuer_labels2 = Gtk.Label(xalign=0)
+        secret_issuer_labels2.set_markup(str('<span style="italic" foreground="darkgray">{}</span>').format(secret_issuer))
+        authcode_labels2 = Gtk.Label(xalign=1)
+        authcode_labels2.set_markup(str('<span size="x-large">{}</span>').format(authcode))
+        rightlayouts2 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        delbutton = Gtk.Button(label="Delete")
+        delbutton.get_style_context().add_class("destructive-action")
+        delbutton.connect("clicked", self.delbutton_pressed)
+        #
+        # APPEND AUTHCODE LABELS LIST AS TUPLE AT [5][range(0,1)]
+        #
         cd_l = list(codedata)
-        cd_l.append(authcode_label)
+        cd_l.append(tuple((authcode_label, authcode_labels2)))
+        cd_l.append(delbutton)
+        cd_l.append(codestack)
         self.codelist[givenindex] = tuple(cd_l)
+        #
+        # PACKING STACK1
+        #
         coderow_vbox.pack_start(secret_name_label, True, True, 6)
         coderow_vbox.pack_start(secret_issuer_label, True, True, 6)
-        coderow_vbox2.set_center_widget(self.codelist[-1][6])
-        coderow.add(coderow_hbox)
+        coderow_vbox2.set_center_widget(self.codelist[-1][5][0])
+        #
+        # PACKING STACK2
+        #
+        coderow_vboxs2.pack_start(secret_name_labels2, True, True, 6)
+        coderow_vboxs2.pack_start(secret_issuer_labels2, True, True, 6)
+        coderow_vbox2s2.set_center_widget(rightlayouts2)
+        rightlayouts2.pack_start(self.codelist[-1][5][1], True, True, 0)
+        rightlayouts2.pack_start(self.codelist[-1][6], False, False, 6)
+        #
+        # ADD STACKS TO STACK
+        #
+        codestack.add_named(coderow_hbox, "s1")
+        codestack.add_named(coderow_hboxs2, "s2")
+        if self.editmode:
+            codestack.get_child_by_name("s2").show_all()
+            codestack.set_visible_child_name("s2")
+        coderow.add(codestack)
         if insertAt is None:
             self.rowlist.append(coderow)
         else:
