@@ -19,10 +19,10 @@ class MainWindow(Gtk.Window):
         self.rowlist = []
         Gtk.Window.__init__(self)
         # set up window parameters
-        self.set_title("GTK32FA")
+        self.set_title("2 Factor Wallet")
         self.set_default_size(640, 640)
         # make a headerbar for the window
-        headerbar = Gtk.HeaderBar(title="GTK32FA", show_close_button=True)
+        headerbar = Gtk.HeaderBar(title="2 Factor Wallet", show_close_button=True)
         self.set_titlebar(headerbar)
         # headerbar buttons
         self.headerbarbtn_addcode = Gtk.Button.new_from_icon_name("list-add", Gtk.IconSize.BUTTON)
@@ -453,7 +453,7 @@ class MainWindow(Gtk.Window):
             confirmdlg.destroy()
             for i in range(len(self.codelist)):
                 if self.codelist[i][6] == widget:
-                    self.codelist[i][7].destroy()
+                    self.codelist[i][9].destroy()
                     self.codelist.pop(i)
                     self.update_yaml()
                     break
@@ -519,6 +519,7 @@ class MainWindow(Gtk.Window):
         cd_l.append(delbutton)
         cd_l.append(codestack)
         cd_l.append(editbutton)
+        cd_l.append(coderow)
         self.codelist[givenindex] = tuple(cd_l)
         #
         # PACKING STACK1
