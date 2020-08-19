@@ -13,6 +13,8 @@ from gi.repository import Gtk
 
 class MainWindow(Gtk.Window):
     def __init__(self):
+        # not editing
+        self.editing = [False, 0]
         # self.settings for theme
         self.settings = Gtk.Settings.get_default()
         self.codelist = []
@@ -346,13 +348,29 @@ class MainWindow(Gtk.Window):
         secret_issuer = self.newcode_issuer_buffer.get_text()
         secret_name = self.newcode_name_buffer.get_text()
         authcode = secret.now()
-        self.codelist.append(tuple((authcode, secret, secret_name, secret_issuer, secret_plaintext)))
-        self.codeviewbox.add(self.newlistrow(self.codelist[-1], -1))
-        self.codeviewbox.show_all()
-        self.update_yaml()
-        self.newcode_secret_entry.set_text("")
-        self.newcode_name_entry.set_text("")
-        self.newcode_issuer_entry.set_text("")
+        if not True in self.editing:
+            print("epic gamer")
+            self.codelist.append(tuple((authcode, secret, secret_name, secret_issuer, secret_plaintext)))
+            self.codeviewbox.add(self.newlistrow(self.codelist[-1], -1))
+            self.codeviewbox.show_all()
+            self.update_yaml()
+            self.newcode_secret_entry.set_text("")
+            self.newcode_name_entry.set_text("")
+            self.newcode_issuer_entry.set_text("")
+        elif True in self.editing:
+            print("editing")
+            index = self.editing[1]
+            self.codelist[index][9].destroy()
+            self.codelist.pop(index)
+            self.codelist.append(tuple((authcode, secret, secret_name, secret_issuer, secret_plaintext)))
+            self.codeviewbox.add(self.newlistrow(self.codelist[-1], -1))
+            self.codeviewbox.show_all()
+            self.update_yaml()
+            self.newcode_secret_entry.set_text("")
+            self.newcode_name_entry.set_text("")
+            self.newcode_issuer_entry.set_text("")
+            self.newcode_add_button.set_label("Add")
+            self.editing = [False, 0]
         self.headerbarbtn_addcode.set_sensitive(True)
         if len(self.codelist) >= 1:
             self.headerbarbtn_editmode.set_sensitive(True)
@@ -466,16 +484,22 @@ class MainWindow(Gtk.Window):
                 confirmdlg.destroy()
 
     def editbutton_pressed(self, widget):
-        print("edit pressed for obj:")
-        print(widget)
+        for i in range(len(self.codelist)):
+            if self.codelist[i][8] == widget:
+                self.newcode_add_button.set_label("Edit")
+                self.newcode_name_entry.set_text(self.codelist[i][2])
+                self.newcode_issuer_entry.set_text(self.codelist[i][3])
+                self.newcode_secret_entry.set_text(self.codelist[i][4])
+                self.editing = [True, i]
+                self.stack.set_visible_child_name("newcodepage")
 
     def newlistrow(self, codedata, givenindex, insertAt=None):
         coderow = Gtk.ListBoxRow()
         codestack = Gtk.Stack()
         codestack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
         #
-        # STACK1
         #
+        # STACK1
         coderow_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         coderow_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         coderow_vbox2 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
