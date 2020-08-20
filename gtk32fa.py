@@ -67,10 +67,10 @@ class MainWindow(Gtk.Window):
         newcode_name_label = Gtk.Label(label="Name:", xalign=0)
         newcode_issuer_label = Gtk.Label(label="Issuer:", xalign=0)
         newcode_secret_label = Gtk.Label(label="Secret:", xalign=0)
-        newcode_cancel_button = Gtk.Button(label="Cancel")
+        self.newcode_cancel_button = Gtk.Button(label="Cancel")
         self.newcode_add_button = Gtk.Button(label="Add", sensitive=False)
         self.newcode_add_button.get_style_context().add_class("suggested-action")
-        newcode_cancel_button.get_style_context().add_class("destructive-action")
+        self.newcode_cancel_button.get_style_context().add_class("destructive-action")
         self.newcode_name_buffer = Gtk.EntryBuffer()
         self.newcode_issuer_buffer = Gtk.EntryBuffer()
         self.newcode_secret_buffer = Gtk.EntryBuffer()
@@ -82,7 +82,7 @@ class MainWindow(Gtk.Window):
         newcode_layout_spacing_h.set_center_widget(newcode_layout)
         newcode_layout.pack_start(newcode_layout_horizontal, True, True, 6)
         newcode_layout.pack_end(newcode_buttonbox, True, False, 6)
-        newcode_buttonbox.pack_start(newcode_cancel_button, True, True, 0)
+        newcode_buttonbox.pack_start(self.newcode_cancel_button, True, True, 0)
         newcode_buttonbox.pack_end(self.newcode_add_button, True, True, 0)
         newcode_layout_labels.pack_start(newcode_name_label, True, False, 3)
         newcode_layout_labels.pack_start(newcode_issuer_label, True, False, 3)
@@ -96,7 +96,7 @@ class MainWindow(Gtk.Window):
         self.issuerok = False
         self.secretok = False
         # connect things
-        newcode_cancel_button.connect("clicked", self.newcode_cancel_button_clicked)
+        self.newcode_cancel_button.connect("clicked", self.newcode_cancel_button_clicked)
         self.newcode_issuer_buffer.connect("inserted-text", self.newcode_issuer_buffer_changed)
         self.newcode_name_buffer.connect("inserted-text", self.newcode_name_buffer_changed)
         self.newcode_secret_buffer.connect("inserted-text", self.newcode_secret_buffer_changed)
@@ -438,6 +438,9 @@ class MainWindow(Gtk.Window):
         self.validator(self.newcode_add_button, self.secretok, self.nameok, self.issuerok)
 
     def newcode_cancel_button_clicked(self, widget, *data):
+        if True in self.editing:
+            self.newcode_add_button.set_label("Add")
+            self.editing = [False, 0]
         self.stack.set_visible_child_name("codeviewpage")
         self.newcode_name_entry.set_text("")
         self.newcode_issuer_entry.set_text("")
