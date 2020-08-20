@@ -526,6 +526,7 @@ class MainWindow(Gtk.Window):
             else:
                 self.editmode = False
                 self.headerbarbtn_editmode.set_active(False)
+                self.headerbarbtn_editmode.set_sensitive(False)
         else:
                 confirmdlg.destroy()
 
