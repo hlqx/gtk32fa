@@ -28,11 +28,13 @@ class MainWindow(Gtk.Window):
         self.set_titlebar(headerbar)
         # headerbar buttons
         self.headerbarbtn_addcode = Gtk.Button.new_from_icon_name("list-add", Gtk.IconSize.BUTTON)
-        self.headerbarbtn_darkmode = Gtk.Button.new_from_icon_name("weather-clear-night", Gtk.IconSize.BUTTON)
-        self.headerbarbtn_editmode = Gtk.ToggleButton(label="Edit", sensitive=False)
+        self.headerbarbtn_editmode = Gtk.ToggleButton(label="", sensitive=False)
+        image = Gtk.Image.new_from_icon_name("edit", Gtk.IconSize.BUTTON)
+        self.headerbarbtn_editmode.set_image(image)
+        self.headerbarbtn_preferences = Gtk.Button.new_from_icon_name("applications-system", Gtk.IconSize.BUTTON)
         headerbar.pack_start(self.headerbarbtn_addcode)
         headerbar.pack_start(self.headerbarbtn_editmode)
-        headerbar.pack_end(self.headerbarbtn_darkmode)
+        headerbar.pack_end(self.headerbarbtn_preferences)
         # connect window close to window fucking dying
         self.connect("destroy", Gtk.main_quit)
         # stack control, make it main widget for window
@@ -47,9 +49,9 @@ class MainWindow(Gtk.Window):
         # add the codeview to the scrolledwindow
         codeview_scolledwindow.add(self.codeviewbox)
         # connect new button to it's function
-        self.headerbarbtn_darkmode.connect("clicked", self.darkmode_clicked  )
         self.headerbarbtn_addcode.connect("clicked", self.newcode_clicked, self.codeviewbox)
         self.headerbarbtn_editmode.connect("clicked", self.editmode_clicked)
+        self.headerbarbtn_preferences.connect("clicked", self.preferences_clicked)
         code_validation_thread = threading.Thread(target=self.code_checker, daemon=True)
         code_validation_thread.start()
         # # # # # # # # # 
@@ -159,11 +161,31 @@ class MainWindow(Gtk.Window):
         self.decrypt_button.connect("clicked", self.decrypt_clicked)
         self.decryption_password_buffer.connect("inserted-text", self.decrypt_buffer_change)
         self.decryption_password_buffer.connect("deleted-text", self.decrypt_buffer_change)
+        # # # # # # # # # # # #
+        # preferences screen  #
+        # # # # # # # # # # # #
+        preferences_layout = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        preferences_layout_spacing_h = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        preferences_layout_spacing_v = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        preferences_layout_spacing_h.set_center_widget(preferences_layout_spacing_v)
+        preferences_layout_spacing_v.set_center_widget(preferences_layout)
+        preferences_layout_darkmode = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        preferences_return_button = Gtk.Button(label="Back")
+        darkmode_label = Gtk.Label(label="Dark Mode")
+        self.darkmode_toggle = Gtk.Switch()
+        preferences_layout_darkmode.pack_start(darkmode_label, False, False, 6)
+        preferences_layout_darkmode.pack_end(self.darkmode_toggle, False, False, 6)
+        preferences_layout.pack_start(preferences_layout_darkmode, False, False, 6)
+        preferences_layout.pack_end(preferences_return_button, True, False, 6)
+        self.darkmode_toggle.connect("state-set", self.darkmode_toggled)
+        preferences_return_button.connect("clicked", self.preferences_return_clicked)
+
         # add pages to stack
         self.stack.add_named(codeview_scolledwindow, "codeviewpage")
         self.stack.add_named(newcode_layout_spacing_v, "newcodepage")
         self.stack.add_named(encryptionsetup_layout_spacing_v, "setuppage")
         self.stack.add_named(decryption_layout_spacing_v, "decryptionpage")
+        self.stack.add_named(preferences_layout_spacing_h, "settingspage")
         # # # # # # # #
         # start logic #
         # # # # # # # # 
@@ -182,8 +204,10 @@ class MainWindow(Gtk.Window):
             config = open(self.configfile, "r")
             self.configdata = yaml.safe_load(config)
             if self.configdata["dark-theme"]:
+                self.darkmode_toggle.set_state(True)
                 self.settings.set_property("gtk-application-prefer-dark-theme", True)
             else:
+                self.darkmode_toggle.set_state(False)
                 self.settings.set_property("gtk-application-prefer-dark-theme", False)
             if "crypto" in self.configdata and self.configdata["crypto"]:
                 self.cryptoenabled = True
@@ -213,6 +237,12 @@ class MainWindow(Gtk.Window):
             self.stack.set_visible_child_name("decryptionpage")
         elif not self.init_needed and not self.cryptoenabled:
             self.import_storage()
+
+    def preferences_clicked(self, widget):
+        self.headerbarbtn_addcode.set_sensitive(False)
+        if len(self.codelist) >= 1:
+            self.headerbarbtn_editmode.set_sensitive(False)
+        self.stack.set_visible_child_name("settingspage")
 
     def editmode_clicked(self, widget):
         if widget.get_active() == True:
@@ -252,6 +282,12 @@ class MainWindow(Gtk.Window):
             decrypterrordlg.run()
             decrypterrordlg.destroy()
 
+    def preferences_return_clicked(self, widget):
+        self.headerbarbtn_addcode.set_sensitive(True)
+        if len(self.codelist) >= 1:
+            self.headerbarbtn_editmode.set_sensitive(True)
+        self.stack.set_visible_child_name("codeviewpage")
+
     def commit_file_changes(self, data, encryptionenabled):
         with open(self.storagefile, "wb+") as storage:
             storage.truncate(0)
@@ -286,7 +322,7 @@ class MainWindow(Gtk.Window):
         self.configdata = yaml.safe_load(config)
         self.cryptoenabled = True
         self.headerbarbtn_addcode.set_sensitive(True)
-        self.headerbarbtn_darkmode.set_sensitive(True)
+        self.headerbarbtn_preferences.set_sensitive(True)
         self.headerbarbtn_editmode.set_sensitive(False)
         self.stack.set_visible_child_name("codeviewpage")
 
@@ -302,7 +338,7 @@ class MainWindow(Gtk.Window):
         self.commit_file_changes(self.filedata.getvalue(), False)
         config.close()
         self.headerbarbtn_addcode.set_sensitive(True)
-        self.headerbarbtn_darkmode.set_sensitive(True)
+        self.headerbarbtn_preferences.set_sensitive(True)
         self.headerbarbtn_editmode.set_sensitive(False)
         self.stack.set_visible_child_name("codeviewpage")
 
@@ -317,17 +353,19 @@ class MainWindow(Gtk.Window):
 
     def scriptsetup(self):
         self.headerbarbtn_addcode.set_sensitive(False)
-        self.headerbarbtn_darkmode.set_sensitive(False)
+        self.headerbarbtn_preferences.set_sensitive(False)
         self.stack.get_child_by_name("setuppage").set_visible(True)
         self.stack.set_visible_child_name("setuppage")
 
-    def darkmode_clicked(self, widget):
-        if self.configdata["dark-theme"]:
-            darktheme = False
-            self.settings.set_property("gtk-application-prefer-dark-theme", False)
-        else:
-            self.settings.set_property("gtk-application-prefer-dark-theme", True)
+    def darkmode_toggled(self, widget, state):
+        print(widget)
+        print(state)
+        if state:
             darktheme = True
+            self.settings.set_property("gtk-application-prefer-dark-theme", True)
+        else:
+            self.settings.set_property("gtk-application-prefer-dark-theme", False)
+            darktheme = False
         pass
         config_rw = open(self.configfile, "w")
         self.configdata["dark-theme"] = darktheme
@@ -349,7 +387,6 @@ class MainWindow(Gtk.Window):
         secret_name = self.newcode_name_buffer.get_text()
         authcode = secret.now()
         if not True in self.editing:
-            print("epic gamer")
             self.codelist.append(tuple((authcode, secret, secret_name, secret_issuer, secret_plaintext)))
             self.codeviewbox.add(self.newlistrow(self.codelist[-1], -1))
             self.codeviewbox.show_all()
@@ -358,7 +395,6 @@ class MainWindow(Gtk.Window):
             self.newcode_name_entry.set_text("")
             self.newcode_issuer_entry.set_text("")
         elif True in self.editing:
-            print("editing")
             index = self.editing[1]
             self.codelist[index][9].destroy()
             self.codelist.pop(index)
