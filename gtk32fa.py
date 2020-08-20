@@ -28,10 +28,12 @@ class MainWindow(Gtk.Window):
         self.set_titlebar(headerbar)
         # headerbar buttons
         self.headerbarbtn_addcode = Gtk.Button.new_from_icon_name("list-add", Gtk.IconSize.BUTTON)
-        self.headerbarbtn_editmode = Gtk.ToggleButton(label="", sensitive=False)
-        image = Gtk.Image.new_from_icon_name("edit", Gtk.IconSize.BUTTON)
-        self.headerbarbtn_editmode.set_image(image)
+        self.headerbarbtn_editmode = Gtk.ToggleButton(sensitive=False)
+        editmode_img = Gtk.Image.new_from_icon_name("accessories-text-editor", Gtk.IconSize.BUTTON)
+        self.headerbarbtn_editmode.set_image(editmode_img)
+        self.headerbarbtn_editmode.set_property("always_show_image", True)
         self.headerbarbtn_preferences = Gtk.Button.new_from_icon_name("applications-system", Gtk.IconSize.BUTTON)
+        self.headerbarbtn_preferences.set_sensitive(False)
         headerbar.pack_start(self.headerbarbtn_addcode)
         headerbar.pack_start(self.headerbarbtn_editmode)
         headerbar.pack_end(self.headerbarbtn_preferences)
@@ -237,6 +239,7 @@ class MainWindow(Gtk.Window):
             self.stack.set_visible_child_name("decryptionpage")
         elif not self.init_needed and not self.cryptoenabled:
             self.import_storage()
+            self.headerbarbtn_preferences.set_sensitive(True)
 
     def preferences_clicked(self, widget):
         self.headerbarbtn_addcode.set_sensitive(False)
@@ -274,6 +277,7 @@ class MainWindow(Gtk.Window):
                 if len(self.codelist) >= 1:
                     self.headerbarbtn_editmode.set_sensitive(True)
                 self.headerbarbtn_addcode.set_sensitive(True)
+                self.headerbarbtn_preferences.set_sensitive(True)
         except:
             self.decryption_password_entry.set_text("")
             decrypterrordlg = Gtk.MessageDialog(buttons=Gtk.ButtonsType.OK, modal=True, parent=self)
@@ -410,6 +414,7 @@ class MainWindow(Gtk.Window):
         self.headerbarbtn_addcode.set_sensitive(True)
         if len(self.codelist) >= 1:
             self.headerbarbtn_editmode.set_sensitive(True)
+        self.headerbarbtn_preferences.set_sensitive(True)
         self.stack.set_visible_child_name("codeviewpage")
 
     def update_yaml(self):
@@ -448,6 +453,7 @@ class MainWindow(Gtk.Window):
         if len(self.codelist) >= 1:
             self.headerbarbtn_editmode.set_sensitive(True)
         self.headerbarbtn_addcode.set_sensitive(True)
+        self.headerbarbtn_preferences.set_sensitive(True)
 
     def string_entry_buffer_handler(self, buffer=None, pos=None, chars=None, n_chars=None, entry=None, var=None):
         if not (buffer.get_text() == ""):
@@ -497,6 +503,7 @@ class MainWindow(Gtk.Window):
             sleep(1)
 
     def newcode_clicked(self, *data):
+        self.headerbarbtn_preferences.set_sensitive(False)
         self.headerbarbtn_editmode.set_sensitive(False)
         self.headerbarbtn_addcode.set_sensitive(False)
         self.stack.set_visible_child_name("newcodepage")
@@ -571,7 +578,7 @@ class MainWindow(Gtk.Window):
         delbutton = Gtk.Button.new_from_icon_name("edit-delete", Gtk.IconSize.BUTTON)
         delbutton.get_style_context().add_class("circular")
         delbutton.connect("clicked", self.delbutton_pressed)
-        editbutton = Gtk.Button.new_from_icon_name("edit", Gtk.IconSize.BUTTON)
+        editbutton = Gtk.Button.new_from_icon_name("accessories-text-editor", Gtk.IconSize.BUTTON)
         editbutton.get_style_context().add_class("circular")
         editbutton.connect("clicked", self.editbutton_pressed)
         #
