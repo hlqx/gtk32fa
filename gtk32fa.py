@@ -438,8 +438,6 @@ class MainWindow(Gtk.Window):
         self.stack.set_visible_child_name("setuppage")
 
     def darkmode_toggled(self, widget, state):
-        print(widget)
-        print(state)
         if state:
             self.darktheme = True
             self.settings.set_property("gtk-application-prefer-dark-theme", True)
