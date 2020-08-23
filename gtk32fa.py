@@ -5,7 +5,7 @@ import threading, yaml, base64, hashlib
 from cryptography.fernet import Fernet
 from xdg import XDG_DATA_HOME, XDG_CONFIG_HOME
 from pathlib import Path
-from os import path, mkdir, urandom
+from os import path, mkdir, urandom, remove, rmdir
 from time import sleep
 from io import StringIO
 gi.require_version("Gtk", "3.0")
@@ -172,15 +172,30 @@ class MainWindow(Gtk.Window):
         preferences_layout_spacing_h.set_center_widget(preferences_layout_spacing_v)
         preferences_layout_spacing_v.set_center_widget(preferences_layout)
         preferences_layout_darkmode = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        preferences_cleardata_button = Gtk.Button(label="Clear application data")
+        preferences_cleardata_button.get_style_context().add_class("destructive-action")
+        self.preferences_noencryption_button = Gtk.Button(label="Disable encryption")
+        self.preferences_addencryption_button = Gtk.Button(label="Enable encryption")
+        self.preferences_changeencryption_button = Gtk.Button(label="Change encryption password")
         preferences_return_button = Gtk.Button(label="Back")
         darkmode_label = Gtk.Label(label="Dark Mode")
         self.darkmode_toggle = Gtk.Switch()
         preferences_layout_darkmode.pack_start(darkmode_label, False, False, 6)
         preferences_layout_darkmode.pack_end(self.darkmode_toggle, False, False, 6)
-        preferences_layout.pack_start(preferences_layout_darkmode, False, False, 6)
-        preferences_layout.pack_end(preferences_return_button, True, False, 6)
+        preferences_layout.pack_start(preferences_layout_darkmode, False, False, 3)
+        preferences_layout.pack_start(self.preferences_noencryption_button, True, True, 3)
+        preferences_layout.pack_start(self.preferences_addencryption_button, True, True, 3)
+        preferences_layout.pack_start(self.preferences_changeencryption_button, True, True, 3)
+        preferences_layout.pack_start(preferences_cleardata_button, True, True, 3)
+        preferences_layout.pack_end(preferences_return_button, True, False, 12)
         self.darkmode_toggle.connect("state-set", self.darkmode_toggled)
         preferences_return_button.connect("clicked", self.preferences_return_clicked)
+        preferences_cleardata_button.connect("clicked", self.prefrences_cleardata_clicked)
+        # these aren't implemented yet
+        self.preferences_noencryption_button.set_sensitive(False)
+        self.preferences_changeencryption_button.set_sensitive(False)
+        self.preferences_addencryption_button.set_sensitive(False)
+
 
         # add pages to stack
         self.stack.add_named(codeview_scolledwindow, "codeviewpage")
@@ -194,13 +209,13 @@ class MainWindow(Gtk.Window):
         self.editmode = False
         if len(self.codelist) >= 1:
             self.headerbarbtn_editmode.set_sensitive(True)
-        datafolder = Path(XDG_DATA_HOME / "GTK32FA")
-        configfolder = Path(XDG_CONFIG_HOME / "GTK32FA")
-        for folder in datafolder, configfolder:
+        self.datafolder = Path(XDG_DATA_HOME / "GTK32FA")
+        self.configfolder = Path(XDG_CONFIG_HOME / "GTK32FA")
+        for folder in self.datafolder, self.configfolder:
             if not path.exists(folder):
                 mkdir(folder)
-        self.storagefile = Path(datafolder / "storage.yaml")
-        self.configfile = Path(configfolder / "config.yaml")
+        self.storagefile = Path(self.datafolder / "storage.yaml")
+        self.configfile = Path(self.configfolder / "config.yaml")
         if path.exists(self.configfile):
             self.init_needed=False
             config = open(self.configfile, "r")
@@ -240,6 +255,25 @@ class MainWindow(Gtk.Window):
         elif not self.init_needed and not self.cryptoenabled:
             self.import_storage()
             self.headerbarbtn_preferences.set_sensitive(True)
+
+    def prefrences_cleardata_clicked(self, widget):
+        cleardatawarndlg = Gtk.MessageDialog(buttons=Gtk.ButtonsType.YES_NO, modal=True, parent=self)
+        cleardatawarndlg.set_markup("<big>Warning</big>")
+        cleardatawarndlg.format_secondary_text("This action is irreversable, and you will not be able to recover your secrets. Are you sure you want to continue?")
+        resp = cleardatawarndlg.run()
+        if resp == Gtk.ResponseType.YES:
+            remove(self.configfile)
+            remove(self.storagefile)
+            rmdir(self.configfolder)
+            rmdir(self.datafolder)
+            cleardatawarndlg.destroy()
+            dataremoveddialog = Gtk.MessageDialog(modal=True, parent=self, buttons=Gtk.ButtonsType.OK)
+            dataremoveddialog.set_markup("<big>Info</big>")
+            dataremoveddialog.format_secondary_text("Program data has been deleted. The program will now exit.")
+            dataremoveddialog.run()
+            Gtk.main_quit() 
+        elif resp == Gtk.ResponseType.NO:
+            cleardatawarndlg.destroy()
 
     def preferences_clicked(self, widget):
         self.headerbarbtn_addcode.set_sensitive(False)
