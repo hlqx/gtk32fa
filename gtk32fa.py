@@ -268,7 +268,7 @@ class MainWindow(Gtk.Window):
     def prefrences_cleardata_clicked(self, widget):
         cleardatawarndlg = Gtk.MessageDialog(buttons=Gtk.ButtonsType.YES_NO, modal=True, parent=self)
         cleardatawarndlg.set_markup("<big>Warning</big>")
-        cleardatawarndlg.format_secondary_text("This action is irreversable, and you will not be able to recover your secrets. Are you sure you want to continue?")
+        cleardatawarndlg.format_secondary_text("This action is irreversable, and you will not be able to recover your secrets.\nThe program will exit when finished.\nAre you sure you want to continue?")
         resp = cleardatawarndlg.run()
         if resp == Gtk.ResponseType.YES:
             remove(self.configfile)
@@ -276,10 +276,6 @@ class MainWindow(Gtk.Window):
             rmdir(self.configfolder)
             rmdir(self.datafolder)
             cleardatawarndlg.destroy()
-            dataremoveddialog = Gtk.MessageDialog(modal=True, parent=self, buttons=Gtk.ButtonsType.OK)
-            dataremoveddialog.set_markup("<big>Info</big>")
-            dataremoveddialog.format_secondary_text("Program data has been deleted. The program will now exit.")
-            dataremoveddialog.run()
             Gtk.main_quit() 
         elif resp == Gtk.ResponseType.NO:
             cleardatawarndlg.destroy()
