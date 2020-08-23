@@ -15,6 +15,8 @@ class MainWindow(Gtk.Window):
     def __init__(self):
         # not editing
         self.editing = [False, 0]
+        # not updating cfg
+        self.setup_update_cfg = False
         # self.settings for theme
         self.settings = Gtk.Settings.get_default()
         self.codelist = []
