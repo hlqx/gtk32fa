@@ -6,6 +6,8 @@ Might work on platforms other than Linux, but currently uses XDG for data storag
 
 Check the projects tab for feature plans.
 
+Current priority: Utilize PBKDF2 instead of an MD5 hash for generating password derived Fernet keys
+
 Notes:
 - To clear database (if you want to change encryption, or it's corrupted etc.) delete $XDG_CONFIG_HOME/GTK32FA/config.yaml
 - Currently only supports TOTP codes
