@@ -383,6 +383,7 @@ class MainWindow(Gtk.Window):
             yaml.safe_dump(self.configdata, config_rw)
         config = open(self.configfile, "r")
         self.configdata = yaml.safe_load(config)
+        self.darktheme = self.configdata["dark-theme"]
         try:
             self.configdata["dark-theme"] = self.darktheme
         except:
@@ -406,6 +407,7 @@ class MainWindow(Gtk.Window):
             yaml.safe_dump(self.configdata, config_rw)
         config = open(self.configfile, "r")
         self.configdata = yaml.safe_load(config)
+        self.darktheme = self.configdata["dark-theme"]
         self.cryptoenabled = False
         if len(self.codelist) == 0:
             self.filedata = StringIO()
