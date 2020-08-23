@@ -22,7 +22,7 @@ class MainWindow(Gtk.Window):
         Gtk.Window.__init__(self)
         # set up window parameters
         self.set_title("2 Factor Wallet")
-        self.set_default_size(640, 640)
+        self.set_default_size(400, 640)
         # make a headerbar for the window
         headerbar = Gtk.HeaderBar(title="2 Factor Wallet", show_close_button=True)
         self.set_titlebar(headerbar)
@@ -499,7 +499,6 @@ class MainWindow(Gtk.Window):
                     self.codelist[index][5][0].set_markup(str('<span size="x-large">{}</span>').format(datalist[1].now()))
                     self.codelist[index][5][1].set_markup(str('<span size="x-large">{}</span>').format(datalist[1].now()))
                     self.codeviewbox.show_all()
-                #sleep(0.2)
             sleep(1)
 
     def newcode_clicked(self, *data):
@@ -544,8 +543,6 @@ class MainWindow(Gtk.Window):
         coderow = Gtk.ListBoxRow()
         codestack = Gtk.Stack()
         codestack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
-        #
-        #
         # STACK1
         coderow_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         coderow_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -561,9 +558,7 @@ class MainWindow(Gtk.Window):
         secret_issuer_label.set_markup(str('<span style="italic" foreground="darkgray">{}</span>').format(secret_issuer))
         authcode_label = Gtk.Label(xalign=1)
         authcode_label.set_markup(str('<span size="x-large">{}</span>').format(authcode))
-        #
         # STACK 2
-        #
         coderow_hboxs2 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         coderow_vboxs2 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         coderow_vbox2s2 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
