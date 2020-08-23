@@ -176,7 +176,6 @@ class MainWindow(Gtk.Window):
         preferences_cleardata_button.get_style_context().add_class("destructive-action")
         self.preferences_noencryption_button = Gtk.Button(label="Disable encryption")
         self.preferences_addencryption_button = Gtk.Button(label="Enable encryption")
-        self.preferences_changeencryption_button = Gtk.Button(label="Change encryption password")
         preferences_return_button = Gtk.Button(label="Back")
         darkmode_label = Gtk.Label(label="Dark Mode")
         self.darkmode_toggle = Gtk.Switch()
@@ -185,16 +184,15 @@ class MainWindow(Gtk.Window):
         preferences_layout.pack_start(preferences_layout_darkmode, False, False, 3)
         preferences_layout.pack_start(self.preferences_noencryption_button, True, True, 3)
         preferences_layout.pack_start(self.preferences_addencryption_button, True, True, 3)
-        preferences_layout.pack_start(self.preferences_changeencryption_button, True, True, 3)
         preferences_layout.pack_start(preferences_cleardata_button, True, True, 3)
         preferences_layout.pack_end(preferences_return_button, True, False, 12)
         self.darkmode_toggle.connect("state-set", self.darkmode_toggled)
         preferences_return_button.connect("clicked", self.preferences_return_clicked)
         preferences_cleardata_button.connect("clicked", self.prefrences_cleardata_clicked)
-        # these aren't implemented yet
         self.preferences_noencryption_button.set_sensitive(False)
-        self.preferences_changeencryption_button.set_sensitive(False)
         self.preferences_addencryption_button.set_sensitive(False)
+        self.preferences_addencryption_button.connect("clicked", self.preferences_addencryption_clicked)
+        self.preferences_noencryption_button.connect("clicked", self.preferences_noencryption_clicked)
 
 
         # add pages to stack
@@ -221,9 +219,11 @@ class MainWindow(Gtk.Window):
             config = open(self.configfile, "r")
             self.configdata = yaml.safe_load(config)
             if self.configdata["dark-theme"]:
+                self.darktheme = True
                 self.darkmode_toggle.set_state(True)
                 self.settings.set_property("gtk-application-prefer-dark-theme", True)
             else:
+                self.darktheme = False
                 self.darkmode_toggle.set_state(False)
                 self.settings.set_property("gtk-application-prefer-dark-theme", False)
             if "crypto" in self.configdata and self.configdata["crypto"]:
@@ -232,12 +232,7 @@ class MainWindow(Gtk.Window):
                 self.cryptoenabled = False
                 with open(self.storagefile, "rb") as storage:
                     self.filedata = StringIO(storage.read().decode("utf-8"))
-            if "salt" in self.configdata and self.cryptoenabled == True:
-                # = self.configdata["salt"]
-                pass
-            elif "salt" not in self.configdata and self.configdata["crypto"]:
-                # something happened to the salt. need to make a new database if this happens, and it's not backed up.
-                pass
+                    self.headerbarbtn_preferences.set_sensitive(True)
             config.close()
         else:
             self.init_needed=True
@@ -255,6 +250,18 @@ class MainWindow(Gtk.Window):
         elif not self.init_needed and not self.cryptoenabled:
             self.import_storage()
             self.headerbarbtn_preferences.set_sensitive(True)
+
+    def preferences_addencryption_clicked(self, widget):
+        self.preferences_addencryption_button.set_sensitive(False)
+        self.preferences_noencryption_button.set_sensitive(False)
+        self.setup_update_cfg = True
+        self.stack.set_visible_child_name("setuppage")
+
+    def preferences_noencryption_clicked(self, widget):
+        self.preferences_addencryption_button.set_sensitive(False)
+        self.preferences_noencryption_button.set_sensitive(False)
+        self.setup_update_cfg = True
+        self.encryptionsetup_dontencrypt(self)
 
     def prefrences_cleardata_clicked(self, widget):
         cleardatawarndlg = Gtk.MessageDialog(buttons=Gtk.ButtonsType.YES_NO, modal=True, parent=self)
@@ -277,6 +284,10 @@ class MainWindow(Gtk.Window):
 
     def preferences_clicked(self, widget):
         self.headerbarbtn_addcode.set_sensitive(False)
+        if self.cryptoenabled:
+            self.preferences_noencryption_button.set_sensitive(True)
+        else:
+            self.preferences_addencryption_button.set_sensitive(True)
         if len(self.codelist) >= 1:
             self.headerbarbtn_editmode.set_sensitive(False)
         self.stack.set_visible_child_name("settingspage")
@@ -325,6 +336,8 @@ class MainWindow(Gtk.Window):
         if len(self.codelist) >= 1:
             self.headerbarbtn_editmode.set_sensitive(True)
         self.stack.set_visible_child_name("codeviewpage")
+        self.preferences_addencryption_button.set_sensitive(False)
+        self.preferences_noencryption_button.set_sensitive(False)
 
     def commit_file_changes(self, data, encryptionenabled):
         with open(self.storagefile, "wb+") as storage:
@@ -350,34 +363,59 @@ class MainWindow(Gtk.Window):
         passinput = hashlib.md5(self.encryptionsetup_password_buffer.get_text().encode("utf-8")).hexdigest()
         self.cryptokey = base64.urlsafe_b64encode(passinput.encode("ascii"))
         self.fernetcryptokey = Fernet(self.cryptokey)
-        self.filedata = StringIO()
-        self.filedata.write("# GTK32FA\n")
-        self.commit_file_changes(self.filedata.getvalue(), True)
-        with open(self.configfile, 'a') as config:
-            print("crypto: true", file=config)
-            print("dark-theme: false", file=config)
+        self.cryptoenabled = True
+        if len(self.codelist) == 0:
+            self.filedata = StringIO()
+            self.filedata.write("# GTK32FA\n")
+            self.commit_file_changes(self.filedata.getvalue(), True)
+        else:
+            self.update_yaml()
+        if not self.setup_update_cfg:
+            with open(self.configfile, 'w+') as config:
+                print("crypto: true", file=config)
+                print("dark-theme: false", file=config)
+        else:
+            config_rw = open(self.configfile, "w")
+            self.configdata["crypto"] = True
+            self.configdata["dark-theme"] = self.darktheme
+            yaml.safe_dump(self.configdata, config_rw)
         config = open(self.configfile, "r")
         self.configdata = yaml.safe_load(config)
-        self.cryptoenabled = True
+        try:
+            self.configdata["dark-theme"] = self.darktheme
+        except:
+            # self.darktheme value isn't set; must be during initial setup
+            print("could not check darktheme, sorry!")
         self.headerbarbtn_addcode.set_sensitive(True)
         self.headerbarbtn_preferences.set_sensitive(True)
-        self.headerbarbtn_editmode.set_sensitive(False)
+        if not len(self.codelist) == 0:
+            self.headerbarbtn_editmode.set_sensitive(False)
         self.stack.set_visible_child_name("codeviewpage")
 
     def encryptionsetup_dontencrypt(self, widget):
-        with open(self.configfile, 'a') as config:
-            print("crypto: false", file=config)
-            print("dark-theme: false", file=config)
+        if not self.setup_update_cfg:
+            with open(self.configfile, 'w+') as config:
+                print("crypto: false", file=config)
+                print("dark-theme: false", file=config)
+        else:
+            config_rw = open(self.configfile, "w")
+            self.configdata["crypto"] = False
+            self.configdata["dark-theme"] = self.darktheme
+            yaml.safe_dump(self.configdata, config_rw)
         config = open(self.configfile, "r")
         self.configdata = yaml.safe_load(config)
         self.cryptoenabled = False
-        self.filedata = StringIO()
-        self.filedata.write("# GTK32FA\n")
-        self.commit_file_changes(self.filedata.getvalue(), False)
+        if len(self.codelist) == 0:
+            self.filedata = StringIO()
+            self.filedata.write("# GTK32FA\n")
+            self.commit_file_changes(self.filedata.getvalue(), False)
+        else:
+            self.update_yaml()
         config.close()
         self.headerbarbtn_addcode.set_sensitive(True)
         self.headerbarbtn_preferences.set_sensitive(True)
-        self.headerbarbtn_editmode.set_sensitive(False)
+        if not len(self.codelist) == 0:
+            self.headerbarbtn_editmode.set_sensitive(False)
         self.stack.set_visible_child_name("codeviewpage")
 
     def encryptionsetup_passwordconfirm(self, *data):
@@ -399,14 +437,14 @@ class MainWindow(Gtk.Window):
         print(widget)
         print(state)
         if state:
-            darktheme = True
+            self.darktheme = True
             self.settings.set_property("gtk-application-prefer-dark-theme", True)
         else:
             self.settings.set_property("gtk-application-prefer-dark-theme", False)
-            darktheme = False
+            self.darktheme = False
         pass
         config_rw = open(self.configfile, "w")
-        self.configdata["dark-theme"] = darktheme
+        self.configdata["dark-theme"] = self.darktheme
         yaml.safe_dump(self.configdata, config_rw)
         config_rw.close()
 
