@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import gi
 import pyotp as otp
 import threading, yaml, base64, hashlib
@@ -9,10 +10,12 @@ from os import path, mkdir, urandom, remove, rmdir
 from time import sleep
 from io import StringIO
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk
 
 class MainWindow(Gtk.Window):
     def __init__(self):
+        # make clipboard object
+        self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
         # not editing
         self.editing = [False, 0]
         # not updating cfg
@@ -246,12 +249,12 @@ class MainWindow(Gtk.Window):
             else:
                 open(self.storagefile, "x")
         elif not self.init_needed and self.cryptoenabled:
-            self.headerbarbtn_addcode.set_sensitive(False)
+            self.enable_headerbarbtns(False)
             self.stack.get_child_by_name("decryptionpage").set_visible(True)
             self.stack.set_visible_child_name("decryptionpage")
         elif not self.init_needed and not self.cryptoenabled:
             self.import_storage()
-            self.headerbarbtn_preferences.set_sensitive(True)
+            self.enable_headerbarbtns(True)
 
     def preferences_addencryption_clicked(self, widget):
         self.preferences_addencryption_button.set_sensitive(False)
@@ -281,7 +284,7 @@ class MainWindow(Gtk.Window):
             cleardatawarndlg.destroy()
 
     def preferences_clicked(self, widget):
-        self.headerbarbtn_addcode.set_sensitive(False)
+        self.enable_headerbarbtns(False)
         if self.cryptoenabled:
             self.preferences_noencryption_button.set_sensitive(True)
         else:
@@ -294,8 +297,8 @@ class MainWindow(Gtk.Window):
         if widget.get_active() == True:
             for i in range(len(self.codelist)):
                 self.codelist[i][7].set_visible_child_name("s2")
-                self.editmode = True
         else:
+            self.editmode = True
             for i in range(len(self.codelist)):
                 self.codelist[i][7].set_visible_child_name("s1")
                 self.editmode = False
@@ -317,10 +320,7 @@ class MainWindow(Gtk.Window):
                 self.filedata.write(self.fernetcryptokey.decrypt(encrypted_storage.read()).decode("utf-8"))
                 self.import_storage()
                 self.stack.set_visible_child_name("codeviewpage")
-                if len(self.codelist) >= 1:
-                    self.headerbarbtn_editmode.set_sensitive(True)
-                self.headerbarbtn_addcode.set_sensitive(True)
-                self.headerbarbtn_preferences.set_sensitive(True)
+                self.enable_headerbarbtns(True)
         except:
             self.decryption_password_entry.set_text("")
             decrypterrordlg = Gtk.MessageDialog(buttons=Gtk.ButtonsType.OK, modal=True, parent=self)
@@ -330,12 +330,8 @@ class MainWindow(Gtk.Window):
             decrypterrordlg.destroy()
 
     def preferences_return_clicked(self, widget):
-        self.headerbarbtn_addcode.set_sensitive(True)
-        if len(self.codelist) >= 1:
-            self.headerbarbtn_editmode.set_sensitive(True)
+        self.enable_headerbarbtns(True)
         self.stack.set_visible_child_name("codeviewpage")
-        self.preferences_addencryption_button.set_sensitive(False)
-        self.preferences_noencryption_button.set_sensitive(False)
 
     def commit_file_changes(self, data, encryptionenabled):
         with open(self.storagefile, "wb+") as storage:
@@ -428,8 +424,7 @@ class MainWindow(Gtk.Window):
             self.encryptionsetup_password_entry.set_icon_tooltip_text(Gtk.EntryIconPosition.SECONDARY, "Inputs do not match.")
 
     def scriptsetup(self):
-        self.headerbarbtn_addcode.set_sensitive(False)
-        self.headerbarbtn_preferences.set_sensitive(False)
+        self.enable_headerbarbtns(False)
         self.stack.get_child_by_name("setuppage").set_visible(True)
         self.stack.set_visible_child_name("setuppage")
 
@@ -572,9 +567,7 @@ class MainWindow(Gtk.Window):
             sleep(1)
 
     def newcode_clicked(self, *data):
-        self.headerbarbtn_preferences.set_sensitive(False)
-        self.headerbarbtn_editmode.set_sensitive(False)
-        self.headerbarbtn_addcode.set_sensitive(False)
+        self.enable_headerbarbtns(False)
         self.stack.set_visible_child_name("newcodepage")
 
     def delbutton_pressed(self, widget):
@@ -599,9 +592,19 @@ class MainWindow(Gtk.Window):
         else:
                 confirmdlg.destroy()
 
+    def enable_headerbarbtns(self, enable=False):
+        self.headerbarbtn_preferences.set_sensitive(enable)
+        if enable:
+            if len(self.codelist) >= 1:
+                self.headerbarbtn_editmode.set_sensitive(enable)
+        else:
+            self.headerbarbtn_editmode.set_sensitive(enable)
+        self.headerbarbtn_addcode.set_sensitive(enable)
+
     def editbutton_pressed(self, widget):
         for i in range(len(self.codelist)):
             if self.codelist[i][8] == widget:
+                self.enable_headerbarbtns(False)
                 self.newcode_add_button.set_label("Edit")
                 self.newcode_name_entry.set_text(self.codelist[i][2])
                 self.newcode_issuer_entry.set_text(self.codelist[i][3])
@@ -609,7 +612,12 @@ class MainWindow(Gtk.Window):
                 self.editing = [True, i]
                 self.stack.set_visible_child_name("newcodepage")
 
-    def newlistrow(self, codedata, givenindex, insertAt=None):
+    def copybtn_pressed(self, widget):
+        for i in range(len(self.codelist)):
+            if self.codelist[i][10] == widget:
+                self.clipboard.set_text(self.codelist[i][5][0].get_text(), -1)
+
+    def newlistrow(self, codedata, givenindex, insertAt=-1):
         coderow = Gtk.ListBoxRow()
         codestack = Gtk.Stack()
         codestack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
@@ -622,12 +630,16 @@ class MainWindow(Gtk.Window):
         secret_name = codedata[2]
         secret_issuer = codedata[3]
         authcode = codedata[0]
+        rightlayout = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         secret_name_label = Gtk.Label(xalign=0)
         secret_name_label.set_markup(str('<span style="normal" size="large">{}</span>').format(secret_name))
         secret_issuer_label = Gtk.Label(xalign=0)
         secret_issuer_label.set_markup(str('<span style="italic" foreground="darkgray">{}</span>').format(secret_issuer))
         authcode_label = Gtk.Label(xalign=1)
         authcode_label.set_markup(str('<span size="x-large">{}</span>').format(authcode))
+        authcode_label_copy_btn = Gtk.Button.new_from_icon_name("edit-copy", Gtk.IconSize.BUTTON)
+        authcode_label_copy_btn.get_style_context().add_class("circular")
+        authcode_label_copy_btn.connect("clicked", self.copybtn_pressed)
         # STACK 2
         coderow_hboxs2 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         coderow_vboxs2 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -653,25 +665,29 @@ class MainWindow(Gtk.Window):
         cd_l = list(codedata)
         cd_l.append(tuple((authcode_label, authcode_labels2)))
         cd_l.append(delbutton)
-        cd_l.append(codestack)
-        cd_l.append(editbutton)
-        cd_l.append(coderow)
+        cd_l.append(codestack) # who fucking knows what index number this is tbqh
+        cd_l.append(editbutton) # index no 8 im sure of this one
+        cd_l.append(coderow) # index no 9 i think
+        cd_l.append(authcode_label_copy_btn) # index no 10 i think i mean logically it would be i need to make the lists more logical
+        # ^^ tuple containing all controls maybe? so list only has about 4 elements??? idk
         self.codelist[givenindex] = tuple(cd_l)
         #
         # PACKING STACK1
         #
         coderow_vbox.pack_start(secret_name_label, True, True, 6)
         coderow_vbox.pack_start(secret_issuer_label, True, True, 6)
-        coderow_vbox2.set_center_widget(self.codelist[-1][5][0])
+        coderow_vbox2.set_center_widget(rightlayout)
+        rightlayout.pack_start(self.codelist[insertAt][5][0], True, True, 0) #authcode
+        rightlayout.pack_end(authcode_label_copy_btn, True, True, 3) # authcode label btn (nonfunctional right now)
         #
         # PACKING STACK2
         #
         coderow_vboxs2.pack_start(secret_name_labels2, True, True, 6)
         coderow_vboxs2.pack_start(secret_issuer_labels2, True, True, 6)
         coderow_vbox2s2.set_center_widget(rightlayouts2)
-        rightlayouts2.pack_start(self.codelist[-1][5][1], True, True, 0) #authcode
-        rightlayouts2.pack_start(self.codelist[-1][8], False, False, 3) #edit
-        rightlayouts2.pack_start(self.codelist[-1][6], False, False, 3) #delete
+        rightlayouts2.pack_start(self.codelist[insertAt][5][1], True, True, 0) #authcode
+        rightlayouts2.pack_start(self.codelist[insertAt][8], False, False, 3) #edit
+        rightlayouts2.pack_start(self.codelist[insertAt][6], False, False, 3) #delete
         #
         # ADD STACKS TO STACK
         #
@@ -681,11 +697,11 @@ class MainWindow(Gtk.Window):
             codestack.get_child_by_name("s2").show_all()
             codestack.set_visible_child_name("s2")
         coderow.add(codestack)
-        if insertAt is None:
+        if insertAt == -1:
             self.rowlist.append(coderow)
         else:
             self.rowlist.insert(insertAt, coderow)
-        return self.rowlist[-1]
+        return self.rowlist[insertAt]
 
 # show the starting window
 #GObject.threads_init()
