@@ -10,7 +10,7 @@ from os import path, mkdir, urandom, remove, rmdir
 from time import sleep
 from io import StringIO
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk, GObject
 
 class MainWindow(Gtk.Window):
     def __init__(self):
@@ -616,6 +616,11 @@ class MainWindow(Gtk.Window):
         for i in range(len(self.codelist)):
             if self.codelist[i][10] == widget:
                 self.clipboard.set_text(self.codelist[i][5][0].get_text(), -1)
+                popover = Gtk.Popover()
+                popover.set_relative_to(widget)
+                plbl = Gtk.Label(label="Copied code to clipboard.")
+                popover.add(plbl)
+                popover.show_all()               
 
     def newlistrow(self, codedata, givenindex, insertAt=-1):
         coderow = Gtk.ListBoxRow()
@@ -704,7 +709,7 @@ class MainWindow(Gtk.Window):
         return self.rowlist[insertAt]
 
 # show the starting window
-#GObject.threads_init()
+GObject.threads_init()
 startWindow = MainWindow()
 startWindow.show_all()
 Gtk.main()
