@@ -476,10 +476,10 @@ class MainWindow(Gtk.Window):
             self.newcode_issuer_entry.set_text("")
             self.newcode_add_button.set_label("Add")
             self.editing = [False, 0]
-        self.headerbarbtn_addcode.set_sensitive(True)
-        if len(self.codelist) >= 1:
-            self.headerbarbtn_editmode.set_sensitive(True)
-        self.headerbarbtn_preferences.set_sensitive(True)
+            for i in range(len(self.codelist)):
+                self.codelist[i][7].set_visible_child_name("s1")
+            self.headerbarbtn_editmode.set_active(False)
+        self.enable_headerbarbtns(True)
         self.stack.set_visible_child_name("codeviewpage")
 
     def update_yaml(self):
@@ -529,9 +529,9 @@ class MainWindow(Gtk.Window):
                 return var
             except ValueError:
                 buffer.delete_text(pos, n_chars)
-            else:
-                var = False
-                return var
+        else:
+            var = False
+            return var
 
     def b32_entry_buffer_handler(self, buffer=None, pos=None, chars=None, n_chars=None, entry=None, var=None):
         if not (buffer.get_text() == ""):
@@ -709,7 +709,6 @@ class MainWindow(Gtk.Window):
         return self.rowlist[insertAt]
 
 # show the starting window
-GObject.threads_init()
 startWindow = MainWindow()
 startWindow.show_all()
 Gtk.main()
