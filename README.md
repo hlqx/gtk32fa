@@ -2,9 +2,7 @@
 
 ![App Screenshot](screenshot.jpg?raw=true)
 
-=
 ## Two Factor Authentication Wallet
-=
 
 - A two factor authentication program for Linux.
 - Early development
