@@ -1,4 +1,4 @@
-# GTK32FA
+# twofactor
 
 ![App Screenshot](screenshot.jpg?raw=true)
 
