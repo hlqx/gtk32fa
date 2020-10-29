@@ -69,6 +69,7 @@ row:hover{
 progressbar {
   border-style: none;
   transition: 1s;
+  border-radius: 0px;
 }
 
 progressbar progress{

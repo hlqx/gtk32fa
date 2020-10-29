@@ -28,6 +28,7 @@ import pathlib
 import os
 import html
 import secretstorage
+from time import time
 from uuid import uuid4
 from operator import itemgetter
 from cryptography.fernet import Fernet, InvalidToken
@@ -150,7 +151,6 @@ class MainApplication(Gtk.Application):
             self.hb_editmode.set_sensitive(False)
 
     def import_storage(self):
-        #yamldata = yaml.safe_load(self.file_data.getvalue())
         yamldata = []
         if self.secret_collection.is_locked():
             self.secret_collection.unlock()
@@ -212,9 +212,6 @@ class MainApplication(Gtk.Application):
         self.new_code_generic()
 
     def new_code_totp(self, _):
-        # this and the hotp one REALLY need renaming for clarity!
-        # DO THIS!
-        # (later ofc.)
         self.new_code_type = "totp"
         self.ns_hide_counter_options(True)
         self.new_code_generic()
@@ -387,7 +384,9 @@ class MainApplication(Gtk.Application):
                 for x in searchresults:
                     x.delete()
             except:
-                err_dlg = Gtk.MessageDialog(buttons=Gtk.ButtonsType.OK, modal=True, parent=self.application_window)
+                err_dlg = Gtk.MessageDialog(buttons=Gtk.ButtonsType.OK,
+                modal=True,
+                parent=self.application_window)
                 err_dlg.set_markup("<big>Error</big>")
                 err_dlg.format_secondary_text("Could not remove all keys.\n"
                                               "This could be a permissions error.")
@@ -460,9 +459,10 @@ class MainApplication(Gtk.Application):
 
     def code_checker(self):
         interval = 30
-        current = 1
-        self.crf_progress.set_fraction(1)
+        current = int(time() % 30)
+        self.crf_progress.set_fraction(1-(current/interval))
         while True:
+            print(current)
             if current < interval:
                 current += 1
                 self.crf_progress.set_fraction(1-(current/interval))
