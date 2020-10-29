@@ -1,0 +1,81 @@
+/*
+
+  stylesheet.css
+
+  Copyright 2020 Niall Asher
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+*/
+
+
+list    {
+  background-color: @theme_bg_color;
+}
+
+row {
+  background-color: @theme_base_color;
+  border: 1px solid @borders;
+  border-radius: 6px;
+  margin-left: 4px;
+  margin-right: 4px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+  padding-left: 6px;
+  padding-right: 6px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  outline-width: 0px;
+}
+
+row:hover{
+  background-color: @theme_bg_color;
+  padding-left: 24px;
+  transition: 0.25s;
+}
+
+.authentication_code {
+  font-weight: 600;
+  font-size: 1.5em;
+}
+
+.code_button{
+  padding-left: 0px;
+  padding-right: 0px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.italiclbl {
+  font-style: italic;
+}
+
+.button_icon{
+  padding-left: 2px;
+  padding-right: 2px;
+}
+
+progressbar {
+  border-style: none;
+  transition: 1s;
+}
+
+progressbar progress{
+  border-style: none;
+  transition: 1s;
+}
+
+progressbar trough {
+  border-style: none;
+}
