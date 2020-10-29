@@ -1,0 +1,7 @@
+data/com.niallasher.twofactor.desktop.in
+data/com.niallasher.twofactor.appdata.xml.in
+data/com.niallasher.twofactor.gschema.xml
+src/window.ui
+src/main.py
+src/window.py
+

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="twofactor">
+	<schema id="com.niallasher.twofactor" path="/com/niallasher/twofactor/">
+		<key type="b" name="dark-theme">
+			<default>false</default>
+			<summary>Dark Theme</summary>
+			<description>Toggle whether the application asks for a dark theme.</description>
+		</key>
+	  <key type="b" name="obscure-secrets">
+      <default>true</default>
+	    <summary>Obscure Secret Entry</summary>
+	    <description>Choose whether secrets are obscured with a password char during entry.</description>
+  	</key>
+	</schema>
+</schemalist>

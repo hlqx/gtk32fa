@@ -1,0 +1,14 @@
+{
+    "name": "python3-pyotp",
+    "buildsystem": "simple",
+    "build-commands": [
+        "pip3 install --exists-action=i --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} \"pyotp\""
+    ],
+    "sources": [
+        {
+            "type": "file",
+            "url": "https://files.pythonhosted.org/packages/3d/2f/9bc720582b37d648f949fd190be6e50d6530c5223709462d7b7fab7c0c2c/pyotp-2.4.0-py2.py3-none-any.whl",
+            "sha256": "e96c2d725d0b613b793775bb184e90297fda5f4989e210e28acf08a09ac2cc83"
+        }
+    ]
+}

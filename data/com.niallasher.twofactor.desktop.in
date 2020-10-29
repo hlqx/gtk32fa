@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=gtk32fa
+Description=Two Factor Wallet
+Exec=twofactor
+Terminal=false
+Type=Application
+Categories=GTK;
+StartupNotify=true
