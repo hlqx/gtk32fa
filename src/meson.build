@@ -30,7 +30,8 @@ twofactor_sources = [
   'main.py',
   'listbox.py',
   'twofactorcode.py',
-  'icon.svg'
+  'icon.svg',
+  'screenshot.py'
 ]
 
 install_data(twofactor_sources, install_dir: moduledir)

@@ -81,6 +81,7 @@ class TwoFactorListBoxRow(Gtk.ListBoxRow):
         self.stack.add_named(edit_btn_layout, "s2")
         # finishing touch
         self.row.add(self.row_hbox)
+        self.row.get_style_context().add_class("codelistbox")
         self.show_all()
 
 class EmptyListWidget(Gtk.Box):
@@ -90,6 +91,7 @@ class EmptyListWidget(Gtk.Box):
         empty_list_label = Gtk.Label(label="There doesn't seem to be anything here.")
         empty_list_label.set_markup('<span style="normal" size="large">There doesn\'t seem to anything here.</span>\n'
                                     'Try adding something to the list using the + button.')
+        empty_list_label.get_style_context().add_class("emptylistwidget")
         self.set_center_widget(vbox)
         vbox.pack_start(empty_list_label, True, True, 6)
         self.show_all()

@@ -28,6 +28,9 @@ import pathlib
 import os
 import html
 import secretstorage
+import json
+#import pyzbar.pyzbar
+# TODO: add to flatpak manifest
 from time import time
 from uuid import uuid4
 from operator import itemgetter
@@ -36,7 +39,7 @@ from time import sleep
 from io import StringIO
 from .listbox import TwoFactorListBoxRow, EmptyListWidget
 from .twofactorcode import TwoFactorCode, TwoFactorUIElements
-
+from .screenshot import GNOMEScreenshot
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, GObject, GLib, Gio
 
@@ -75,7 +78,11 @@ class MainApplication(Gtk.Application):
         self.ns_name_entry = self.gtkbuilder.get_object("ns_name_entry")
         self.aboutdialog = self.gtkbuilder.get_object("aboutdlg")
         self.crf_progress = self.gtkbuilder.get_object("crf_progress")
+        self.import_code_btn = self.gtkbuilder.get_object("btn_importcodes")
+        self.qrbtn = self.gtkbuilder.get_object("btn_qrimport")
+        self.import_code_btn.connect("clicked", self.import_code)
         self.crf_progress.set_fraction(1)
+        self.mainlistbox.get_style_context().add_class("codelistbox")
         # connect handlers using a dict
         handlers = {
             "winclosed": Gtk.main_quit,
@@ -92,8 +99,10 @@ class MainApplication(Gtk.Application):
             "ns_name_change": self.ns_name_change,
             "ns_secret_change": self.ns_secret_change,
             "ns_entr_press": self.newcode_enter_press,
-            "about_btn_press": self.about_btn_press
+            "about_btn_press": self.about_btn_press,
+            "btn_importcodes_clicked": self.import_code
         }
+        self.qrbtn.connect('clicked', self.qr_import)
         # other things
         self.darktheme = False
         self.file_data = StringIO()
@@ -128,6 +137,8 @@ class MainApplication(Gtk.Application):
         self.load_config()
         self.import_storage()
         Gtk.Window.__init__(self.application_window)
+        #self.main_stack.set_visible_child_name("ms_import_types")
+        #self.import_types_list_box = self.gtkbuilder.get_object("import_types_list_box")
 
     def load_config(self):
         if self.settings.get_value('dark-theme').unpack():
@@ -398,6 +409,7 @@ class MainApplication(Gtk.Application):
 
     def hb_editmode_press(self, widget):
         if widget.get_active():
+            self.headerbar.get_style_context().add_class("suggested-action")
             for x in self.codes:
                 self.codes.get(x).ui.stack.set_visible_child_name('s2')
             self.editmode = True
@@ -462,7 +474,6 @@ class MainApplication(Gtk.Application):
         current = int(time() % 30)
         self.crf_progress.set_fraction(1-(current/interval))
         while True:
-            print(current)
             if current < interval:
                 current += 1
                 self.crf_progress.set_fraction(1-(current/interval))
@@ -680,6 +691,58 @@ class MainApplication(Gtk.Application):
         elif not active:
             self.settings.set_value("obscure-secrets", GLib.Variant('b', False))
             self.ns_secret_entry.set_visibility(True)
+
+    def import_code(self, widget):
+        # import an unencrypted aegis authenticator backup
+        chooser = Gtk.FileChooserDialog(
+            title="Import Backup",
+            parent=self.application_window,
+            action=Gtk.FileChooserAction.OPEN
+        )
+        chooser.add_buttons(
+            Gtk.STOCK_CANCEL,
+            Gtk.ResponseType.CANCEL,
+            Gtk.STOCK_OPEN,
+            Gtk.ResponseType.OK
+        )
+        response = chooser.run()
+        if response == Gtk.ResponseType.OK:
+            file = open(chooser.get_filename(), "r")
+            jsondata = json.load(file)
+            file.close()
+            for x in jsondata["db"]["entries"]:
+                item = x
+                # if code is a recognized type
+                if item['type'] == 'totp' or item['type'] == 'hotp':
+                    cdict = {
+                        'codetype': item['type'],
+                        'name': item['name'],
+                        'issuer': item['issuer'],
+                        'secret': item['info']['secret'],
+                        'pos': len(self.codes)+1,
+                        'uuid': uuid4().__str__(),
+                        'counter': item['info']['counter'] if (item['type'] == 'hotp') else None
+                    }
+                    self.mainlistbox.add(
+                        self.newlistrow(cdict)
+                    )
+                    self.secret_collection.create_item(
+                    f'{item["name"]} ({item["issuer"]})',
+                    {
+                        "application": "com.niallasher.twofactor",
+                        "uuid": cdict['uuid']
+                    },
+                    GLib.base64_encode(yaml.safe_dump(cdict).encode('utf-8')))
+                else:
+                    pass
+            # move back to the main view
+            self.main_stack.set_visible_child_name("ms_main_list_box")
+            self.enable_all_button_stacks(True)
+        chooser.destroy()
+
+    def qr_import(self, *data):
+        print(data)
+        print("import not implemented")
 
 application = MainApplication()
 application.application_window.show()
