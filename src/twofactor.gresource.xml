@@ -4,5 +4,7 @@
     <file>window.ui</file>
     <file>stylesheet.css</file>
     <file>icon.svg</file>
+    <file>emptylist.svg</file>
+    <file>placeholder.png</file>
   </gresource>
 </gresources>

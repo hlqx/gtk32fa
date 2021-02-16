@@ -20,7 +20,7 @@ from uuid import uuid4
 
 class TwoFactorCode:
 
-    def __init__(self, name, issuer, codetype, codestr, counter, pos, ui):
+    def __init__(self, name, issuer, codetype, codestr, counter, pos, ui, imagedata):
         # generate the uuid used as the dict key later
         # we want this to be a string
         self.uuid = uuid4().__str__()
@@ -31,6 +31,7 @@ class TwoFactorCode:
         self.codestr = codestr
         self.ui = ui
         self.counter = counter
+        self.imagedata = imagedata
         self.pos = pos
         # check code type, make code object for type,
         # or throw exception if not recognized
@@ -57,17 +58,18 @@ class TwoFactorCode:
 
 class TwoFactorUIElements():
 
-        def __init__(self, stack, authlbl, issuerlbl, namelbl, row, rowhbox, counterlbl=None):
-            self.stack = stack
+        def __init__(self, revealer, authlbl, issuerlbl, namelbl, row, avatar, mainlayout, counterlbl=None):
+            self.revealer = revealer
             self.authlbl = authlbl
             self.issuerlbl = issuerlbl
             self.namelbl = namelbl
             self.row = row
-            self.rowhbox = rowhbox
+            self.avatar = avatar
+            self.mainlayout = mainlayout
             self.counterlbl = counterlbl
 
         def enable_editmode(self, enable: bool):
             if enable:
-                self.stack.set_visible_child_name("s2")
+                self.revealer.set_reveal_child(True)
             else:
-                self.stack.set_visible_child_name("s1")
+                self.revealer.set_reveal_child(True)

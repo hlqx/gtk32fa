@@ -19,15 +19,46 @@
 
 */
 
+.tophighlight {
+  /* TODO: replace pink with a non placeholder colour */
+  border-top: 3px solid @theme_selected_bg_color;
+  border-right: 1px solid @borders;
+  border-left: 1px solid @borders;
+  border-bottom: 1px solid @borders;
+  border-radius:  6px;
+}
 
-.codelistbox list{
+.bottomhighlight {
+  /* TODO: same as the other */
+  border-bottom: 3px solid @theme_selected_bg_color;
+  transition: 0.25s;
+  border-right: 1px solid @borders;
+  border-left: 1px solid @borders;
+  border-top: 1px solid @borders;
+  border-radius:  6px;
+}
+
+.crborder{
+  border: 1px solid @borders;
+  border-radius: 6px;
+}
+
+.preview_box {
+  background-color: @theme_bg_color;
+  border: 1px solid @borders;
+  border-radius: 6px;
+}
+
+.codelistbox listbox{
+  border-radius: 0px;
+  border: 0px solid @border;
   background-color: @theme_bg_color;
 }
 
 .codelistbox row {
   background-color: @theme_base_color;
-  border: 1px solid @borders;
-  border-radius: 6px;
+  /*border: 1px solid @borders;
+  border-radius: 6px;*/
   margin-left: 4px;
   margin-right: 4px;
   margin-top: 4px;
@@ -41,13 +72,27 @@
 
 .codelistbox row:hover{
   background-color: @theme_bg_color;
+  /*padding-left: 24px;*/
+  transition: 0.25s;
+}
+
+.hoverbox row:hover{
   padding-left: 24px;
   transition: 0.25s;
+}
+
+.codelistbox row:hover eventbox{
+  padding-left: 24px;
 }
 
 .authentication_code {
   font-weight: 600;
   font-size: 1.5em;
+}
+
+.authcode_name {
+  font-weight: 400;
+  font-size: 1.25em;
 }
 
 .code_button{
@@ -99,7 +144,7 @@ progressbar trough {
   padding-right: 12px;
   padding-top: 12px;
   padding-bottom: 12px;
-  background-color: @theme_bg-color;
+  background-color: @theme_bg_color;
   border-bottom: 1px solid @borders;
   color: @theme_fg_color;
 }
@@ -111,4 +156,38 @@ progressbar trough {
 
 .selectionlistbox row:active{
   background-color: @selected_bg_color;
+}
+
+.newlistbox {
+  border: 1px solid @borders;
+  border-radius: 6px;
+  background-color: @theme_base_color;
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+.newlistbox row {
+  background-color: @theme_base_color;
+  border: 0;
+  color: @theme_fg_color;
+}
+
+.newlistbox row label {
+  padding-left: 4px;
+}
+
+.newlistbox row entry {
+  padding-right: 4px;
+}
+
+.avatar-main {
+  border: 2px solid @border;
+  border-radius: 100%;
+}
+
+.newlistbox row {
+  padding-left: 6px;
+  padding-right: 6px;
+  padding-top: 3px;
+  padding-bottom: 3px;
 }

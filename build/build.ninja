@@ -23,7 +23,7 @@ rule CUSTOM_COMMAND_DEP
  restat = 1
 
 rule REGENERATE_BUILD
- command = /usr/bin/meson --internal regenerate /home/hlqx/Projects/twofactor /home/hlqx/Projects/twofactor/build --backend ninja
+ command = /usr/bin/meson --internal regenerate /home/niallasher/Projects/twofactor /home/niallasher/Projects/twofactor/build --backend ninja
  description = Regenerating build files.
  generator = 1
 
@@ -50,21 +50,21 @@ build src/twofactor.gresource: CUSTOM_COMMAND_DEP ../src/twofactor.gresource.xml
 build twofactor-pot: phony meson-twofactor-pot
 
 build meson-twofactor-pot: CUSTOM_COMMAND 
- COMMAND = /usr/bin/meson --internal commandrunner /home/hlqx/Projects/twofactor /home/hlqx/Projects/twofactor/build po /usr/bin/meson /usr/bin/meson --internal gettext pot --pkgname=twofactor --extra-args=--flag=g_sprintf:2:c-format@@--flag=NC_:2:pass-c-format@@--flag=g_snprintf:3:c-format@@--flag=g_string_printf:2:c-format@@--flag=g_fprintf:2:c-format@@--add-comments@@--flag=g_dngettext:2:pass-c-format@@--keyword=_@@--flag=g_printerr:1:c-format@@--keyword=g_dpgettext2:2c,3@@--flag=g_markup_printf_escaped:1:c-format@@--flag=N_:1:pass-c-format@@--keyword=g_dcgettext:2@@--keyword=NC_:1c,2@@--flag=C_:2:pass-c-format@@--flag=g_set_error:4:c-format@@--flag=g_print:1:c-format@@--from-code=UTF-8@@--flag=g_log:3:c-format@@--keyword=g_dngettext:2,3@@--keyword=N_@@--flag=g_strdup_printf:1:c-format@@--flag=g_string_append_printf:2:c-format@@--keyword=C_:1c,2@@--flag=g_printf:1:c-format@@--flag=g_error_new:3:c-format
+ COMMAND = /usr/bin/meson --internal commandrunner /home/niallasher/Projects/twofactor /home/niallasher/Projects/twofactor/build po /usr/bin/meson /usr/bin/meson --internal gettext pot --pkgname=twofactor --extra-args=--flag=g_sprintf:2:c-format@@--flag=NC_:2:pass-c-format@@--flag=g_snprintf:3:c-format@@--flag=g_string_printf:2:c-format@@--flag=g_fprintf:2:c-format@@--add-comments@@--flag=g_dngettext:2:pass-c-format@@--keyword=_@@--flag=g_printerr:1:c-format@@--keyword=g_dpgettext2:2c,3@@--flag=g_markup_printf_escaped:1:c-format@@--flag=N_:1:pass-c-format@@--keyword=g_dcgettext:2@@--keyword=NC_:1c,2@@--flag=C_:2:pass-c-format@@--flag=g_set_error:4:c-format@@--flag=g_print:1:c-format@@--from-code=UTF-8@@--flag=g_log:3:c-format@@--keyword=g_dngettext:2,3@@--keyword=N_@@--flag=g_strdup_printf:1:c-format@@--flag=g_string_append_printf:2:c-format@@--keyword=C_:1c,2@@--flag=g_printf:1:c-format@@--flag=g_error_new:3:c-format
  description = Running$ external$ command$ twofactor-pot
  pool = console
 
 build twofactor-gmo: phony meson-twofactor-gmo
 
 build meson-twofactor-gmo: CUSTOM_COMMAND 
- COMMAND = /usr/bin/meson --internal commandrunner /home/hlqx/Projects/twofactor /home/hlqx/Projects/twofactor/build po /usr/bin/meson /usr/bin/meson --internal gettext gen_gmo
+ COMMAND = /usr/bin/meson --internal commandrunner /home/niallasher/Projects/twofactor /home/niallasher/Projects/twofactor/build po /usr/bin/meson /usr/bin/meson --internal gettext gen_gmo
  description = Running$ external$ command$ twofactor-gmo
  pool = console
 
 build twofactor-update-po: phony meson-twofactor-update-po
 
 build meson-twofactor-update-po: CUSTOM_COMMAND 
- COMMAND = /usr/bin/meson --internal commandrunner /home/hlqx/Projects/twofactor /home/hlqx/Projects/twofactor/build po /usr/bin/meson /usr/bin/meson --internal gettext update_po --pkgname=twofactor --extra-args=--flag=g_sprintf:2:c-format@@--flag=NC_:2:pass-c-format@@--flag=g_snprintf:3:c-format@@--flag=g_string_printf:2:c-format@@--flag=g_fprintf:2:c-format@@--add-comments@@--flag=g_dngettext:2:pass-c-format@@--keyword=_@@--flag=g_printerr:1:c-format@@--keyword=g_dpgettext2:2c,3@@--flag=g_markup_printf_escaped:1:c-format@@--flag=N_:1:pass-c-format@@--keyword=g_dcgettext:2@@--keyword=NC_:1c,2@@--flag=C_:2:pass-c-format@@--flag=g_set_error:4:c-format@@--flag=g_print:1:c-format@@--from-code=UTF-8@@--flag=g_log:3:c-format@@--keyword=g_dngettext:2,3@@--keyword=N_@@--flag=g_strdup_printf:1:c-format@@--flag=g_string_append_printf:2:c-format@@--keyword=C_:1c,2@@--flag=g_printf:1:c-format@@--flag=g_error_new:3:c-format
+ COMMAND = /usr/bin/meson --internal commandrunner /home/niallasher/Projects/twofactor /home/niallasher/Projects/twofactor/build po /usr/bin/meson /usr/bin/meson --internal gettext update_po --pkgname=twofactor --extra-args=--flag=g_sprintf:2:c-format@@--flag=NC_:2:pass-c-format@@--flag=g_snprintf:3:c-format@@--flag=g_string_printf:2:c-format@@--flag=g_fprintf:2:c-format@@--add-comments@@--flag=g_dngettext:2:pass-c-format@@--keyword=_@@--flag=g_printerr:1:c-format@@--keyword=g_dpgettext2:2c,3@@--flag=g_markup_printf_escaped:1:c-format@@--flag=N_:1:pass-c-format@@--keyword=g_dcgettext:2@@--keyword=NC_:1c,2@@--flag=C_:2:pass-c-format@@--flag=g_set_error:4:c-format@@--flag=g_print:1:c-format@@--from-code=UTF-8@@--flag=g_log:3:c-format@@--keyword=g_dngettext:2,3@@--keyword=N_@@--flag=g_strdup_printf:1:c-format@@--flag=g_string_append_printf:2:c-format@@--keyword=C_:1c,2@@--flag=g_printf:1:c-format@@--flag=g_error_new:3:c-format
  description = Running$ external$ command$ twofactor-update-po
  pool = console
 
@@ -103,7 +103,7 @@ build dist: phony meson-dist
 # Suffix
 
 build meson-ctags: CUSTOM_COMMAND PHONY
- COMMAND = /usr/bin/meson --internal tags ctags /home/hlqx/Projects/twofactor
+ COMMAND = /usr/bin/meson --internal tags ctags /home/niallasher/Projects/twofactor
  pool = console
 
 build ctags: phony meson-ctags
@@ -119,7 +119,7 @@ build all: phony data/com.niallasher.twofactor.desktop data/com.niallasher.twofa
 build clean: phony meson-clean
 
 build meson-clean-ctlist: CUSTOM_COMMAND PHONY
- COMMAND = /usr/bin/meson --internal cleantrees /home/hlqx/Projects/twofactor/build/meson-private/cleantrees.dat
+ COMMAND = /usr/bin/meson --internal cleantrees /home/niallasher/Projects/twofactor/build/meson-private/cleantrees.dat
  description = Cleaning$ custom$ target$ directories
 
 build clean-ctlist: phony meson-clean-ctlist

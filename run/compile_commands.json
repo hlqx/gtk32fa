@@ -1,0 +1,152 @@
+[
+  {
+    "directory": "/home/niallasher/Projects/twofactor/run",
+    "command": "/usr/bin/meson --internal msgfmthelper ../data/com.niallasher.twofactor.desktop.in data/com.niallasher.twofactor.desktop desktop ../data/../po",
+    "file": "../data/com.niallasher.twofactor.desktop.in",
+    "output": "data/com.niallasher.twofactor.desktop"
+  },
+  {
+    "directory": "/home/niallasher/Projects/twofactor/run",
+    "command": "/usr/bin/meson --internal msgfmthelper ../data/com.niallasher.twofactor.appdata.xml.in data/com.niallasher.twofactor.appdata.xml xml ../data/../po",
+    "file": "../data/com.niallasher.twofactor.appdata.xml.in",
+    "output": "data/com.niallasher.twofactor.appdata.xml"
+  },
+  {
+    "directory": "/home/niallasher/Projects/twofactor/run",
+    "command": "glib-compile-resources ../src/twofactor.gresource.xml --sourcedir ../src --internal --generate --target src/twofactor.gresource --dependency-file src/twofactor.gresource.d",
+    "file": "../src/twofactor.gresource.xml",
+    "output": "src/twofactor.gresource"
+  },
+  {
+    "directory": "/home/niallasher/Projects/twofactor/run",
+    "command": "",
+    "file": "meson-twofactor-pot",
+    "output": "twofactor-pot"
+  },
+  {
+    "directory": "/home/niallasher/Projects/twofactor/run",
+    "command": "",
+    "file": "meson-twofactor-gmo",
+    "output": "twofactor-gmo"
+  },
+  {
+    "directory": "/home/niallasher/Projects/twofactor/run",
+    "command": "",
+    "file": "meson-twofactor-update-po",
+    "output": "twofactor-update-po"
+  },
+  {
+    "directory": "/home/niallasher/Projects/twofactor/run",
+    "command": "/usr/bin/meson test --no-rebuild --print-errorlogs",
+    "file": "all",
+    "output": "meson-test"
+  },
+  {
+    "directory": "/home/niallasher/Projects/twofactor/run",
+    "command": "",
+    "file": "meson-test",
+    "output": "test"
+  },
+  {
+    "directory": "/home/niallasher/Projects/twofactor/run",
+    "command": "/usr/bin/meson test --benchmark --logbase benchmarklog --num-processes=1 --no-rebuild",
+    "file": "all",
+    "output": "meson-benchmark"
+  },
+  {
+    "directory": "/home/niallasher/Projects/twofactor/run",
+    "command": "",
+    "file": "meson-benchmark",
+    "output": "benchmark"
+  },
+  {
+    "directory": "/home/niallasher/Projects/twofactor/run",
+    "command": "/usr/bin/meson install --no-rebuild",
+    "file": "PHONY",
+    "output": "meson-install"
+  },
+  {
+    "directory": "/home/niallasher/Projects/twofactor/run",
+    "command": "",
+    "file": "meson-install",
+    "output": "install"
+  },
+  {
+    "directory": "/home/niallasher/Projects/twofactor/run",
+    "command": "/usr/bin/meson dist",
+    "file": "PHONY",
+    "output": "meson-dist"
+  },
+  {
+    "directory": "/home/niallasher/Projects/twofactor/run",
+    "command": "",
+    "file": "meson-dist",
+    "output": "dist"
+  },
+  {
+    "directory": "/home/niallasher/Projects/twofactor/run",
+    "command": "/usr/bin/meson --internal tags ctags /home/niallasher/Projects/twofactor",
+    "file": "PHONY",
+    "output": "meson-ctags"
+  },
+  {
+    "directory": "/home/niallasher/Projects/twofactor/run",
+    "command": "",
+    "file": "meson-ctags",
+    "output": "ctags"
+  },
+  {
+    "directory": "/home/niallasher/Projects/twofactor/run",
+    "command": "/usr/bin/meson --internal uninstall",
+    "file": "PHONY",
+    "output": "meson-uninstall"
+  },
+  {
+    "directory": "/home/niallasher/Projects/twofactor/run",
+    "command": "",
+    "file": "meson-uninstall",
+    "output": "uninstall"
+  },
+  {
+    "directory": "/home/niallasher/Projects/twofactor/run",
+    "command": "",
+    "file": "data/com.niallasher.twofactor.desktop",
+    "output": "all"
+  },
+  {
+    "directory": "/home/niallasher/Projects/twofactor/run",
+    "command": "",
+    "file": "meson-clean",
+    "output": "clean"
+  },
+  {
+    "directory": "/home/niallasher/Projects/twofactor/run",
+    "command": "/usr/bin/meson --internal cleantrees /home/niallasher/Projects/twofactor/run/meson-private/cleantrees.dat",
+    "file": "PHONY",
+    "output": "meson-clean-ctlist"
+  },
+  {
+    "directory": "/home/niallasher/Projects/twofactor/run",
+    "command": "",
+    "file": "meson-clean-ctlist",
+    "output": "clean-ctlist"
+  },
+  {
+    "directory": "/home/niallasher/Projects/twofactor/run",
+    "command": "/usr/bin/ninja -t clean",
+    "file": "PHONY",
+    "output": "meson-clean"
+  },
+  {
+    "directory": "/home/niallasher/Projects/twofactor/run",
+    "command": "/usr/bin/meson --internal regenerate /home/niallasher/Projects/twofactor /home/niallasher/Projects/twofactor/run --backend ninja",
+    "file": "../meson.build",
+    "output": "build.ninja"
+  },
+  {
+    "directory": "/home/niallasher/Projects/twofactor/run",
+    "command": "/usr/bin/meson --internal regenerate /home/niallasher/Projects/twofactor /home/niallasher/Projects/twofactor/run --backend ninja",
+    "file": "PHONY",
+    "output": "reconfigure"
+  }
+]

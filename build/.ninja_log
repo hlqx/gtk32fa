@@ -1,0 +1,4 @@
+# ninja log v5
+2	20	1613079222726890494	src/twofactor.gresource	433482109d53f841
+0	233	1613079222900883826	data/com.niallasher.twofactor.desktop	c23472e5edaaaabb
+1	239	1613079222906883597	data/com.niallasher.twofactor.appdata.xml	f2ab031a745184e1

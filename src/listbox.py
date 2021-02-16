@@ -14,84 +14,121 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
-from gi.repository import Gtk
+
+from gi.repository import Gtk, GdkPixbuf, Gdk
+from gi.repository.Handy import Avatar
+
+
 
 class TwoFactorListBoxRow(Gtk.ListBoxRow):
-    def __init__(self):
-        # create widgets
-        Gtk.ListBoxRow.__init__(self)
-        self.row = self
-        self.stack = Gtk.Stack()
-        self.stack.set_homogeneous(False)
-        self.stack.set_interpolate_size(True)
-        self.stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
-        self.row_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        row_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        row_vbox_2 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        normal_btn_layout = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        edit_btn_layout = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        authentication_code_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        increment_code_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        copy_icon = Gtk.Image.new_from_icon_name("edit-copy-symbolic", Gtk.IconSize.MENU)
-        inc_icon = Gtk.Image.new_from_icon_name("list-add-symbolic", Gtk.IconSize.MENU)
-        for _, icon_name in enumerate([copy_icon, inc_icon]):
-            icon_name.get_style_context().add_class("button_icon")
-        self.name_label = Gtk.Label(xalign=0)
-        self.issuer_label = Gtk.Label(xalign=0)
-        self.issuer_label.get_style_context().add_class("italiclbl")
-        #self.copy_button.set_relief(Gtk.ReliefStyle.NONE)
-        self.increment_counter_button = Gtk.Button()
-        self.copy_button = Gtk.Button()
-        # the code_button class removes padding around the object
-        #self.increment_counter_button.get_style_context().add_class("code_button")
-        self.increment_counter_button.set_relief(Gtk.ReliefStyle.NONE)
-        self.authentication_code_label = Gtk.Label(xalign=0)
-        self.copy_button.set_relief(Gtk.ReliefStyle.NONE)
-        # add the custom authentication_code css class to the authentication code label
-        self.authentication_code_label.get_style_context().add_class("authentication_code")
-        self.copy_button.add(authentication_code_hbox)
-        authentication_code_hbox.pack_start(copy_icon, False, False, 3)
-        authentication_code_hbox.pack_end(self.authentication_code_label, False, False, 3)
-        self.copy_button.get_style_context().add_class("code_button")
-        self.counter_label = Gtk.Label(xalign=1)
-        self.increment_counter_button.add(increment_code_hbox)
-        increment_code_hbox.pack_start(inc_icon, False, False, 3)
-        increment_code_hbox.pack_end(self.counter_label, False, False, 3)
-        self.delete_button = Gtk.Button.new_from_icon_name("edit-delete-symbolic", Gtk.IconSize.BUTTON)
-        self.edit_button = Gtk.Button.new_from_icon_name("edit-select-all", Gtk.IconSize.BUTTON)
-        self.move_up_button = Gtk.Button.new_from_icon_name("go-up-symbolic", Gtk.IconSize.BUTTON)
-        self.move_down_button = Gtk.Button.new_from_icon_name("go-down-symbolic", Gtk.IconSize.BUTTON)
-        for _, name in enumerate([self.delete_button, self.edit_button, self.move_up_button, self.move_down_button]):
-            name.get_style_context().add_class("circular")
-        # packing main boxes
-        self.row_hbox.pack_start(row_vbox, False, True, 6)
-        self.row_hbox.pack_end(row_vbox_2, False, True, 6)
-        row_vbox_2.set_center_widget(self.stack)
-        # packing
-        row_vbox.pack_start(self.name_label, True, True, 6)
-        row_vbox.pack_end(self.issuer_label, True, True, 6)
-        normal_btn_layout.pack_start(self.increment_counter_button, False, False, 3)
-        normal_btn_layout.pack_start(self.copy_button, False, False, 0)
-        edit_btn_layout.pack_start(self.move_up_button, False, False, 3)
-        edit_btn_layout.pack_start(self.move_down_button, False, False, 3)
-        edit_btn_layout.pack_start(self.edit_button, False, False, 3)
-        edit_btn_layout.pack_start(self.delete_button, False, False, 3)
-        # add stack pages
-        self.stack.add_named(normal_btn_layout, "s1")
-        self.stack.add_named(edit_btn_layout, "s2")
-        # finishing touch
-        self.row.add(self.row_hbox)
-        self.row.get_style_context().add_class("codelistbox")
-        self.show_all()
 
-class EmptyListWidget(Gtk.Box):
-    def __init__(self):
-        Gtk.Box.__init__(self)
-        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        empty_list_label = Gtk.Label(label="There doesn't seem to be anything here.")
-        empty_list_label.set_markup('<span style="normal" size="large">There doesn\'t seem to anything here.</span>\n'
-                                    'Try adding something to the list using the + button.')
-        empty_list_label.get_style_context().add_class("emptylistwidget")
-        self.set_center_widget(vbox)
-        vbox.pack_start(empty_list_label, True, True, 6)
-        self.show_all()
+        # TODO: go against base instinct and replace the camelCase
+        def __init__(self, uuid: str) -> Gtk.ListBoxRow:
+            # initialize the listboxrow
+            Gtk.ListBoxRow.__init__(self)
+            self.row = self
+            # uuid
+            self.uuid = uuid
+            # main layout box
+            self.mainLayout = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+            # sublayouts
+            self.infoLayout = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=20)
+            self.ctrlLayout = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+            self.detailLayout = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
+            self.issuerAndCounterLayout = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+            # buttonbox for copy & increment
+            buttonBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+            #buttonBox.set_layout(Gtk.ButtonBoxStyle.END)
+            buttonBox.set_margin_top(18)
+            buttonBox.set_margin_bottom(18)
+            buttonBox.get_style_context().add_class("linked")
+            # create icons for buttons & apply css class
+            copyIcon = Gtk.Image.new_from_icon_name("edit-copy-symbolic", Gtk.IconSize.MENU)
+            incrementIcon = Gtk.Image.new_from_icon_name("list-add-symbolic", Gtk.IconSize.MENU)
+            for _, iconName in enumerate([copyIcon, incrementIcon]):
+                iconName.get_style_context().add_class("button_icon")
+            incrementIcon.set_margin_left(2)
+            # create avatar
+            self.avatar = Avatar()
+            self.avatar.set_size(64)
+            self.avatar.get_style_context().add_class("avatar-main")
+            self.avatar.set_show_initials(True)
+            # create widgets
+            self.nameLabel = Gtk.Label(xalign=0)
+            self.issuerLabel = Gtk.Label(xalign=0)
+            self.issuerLabel.get_style_context().add_class("italiclbl")
+            self.authCodeLabel = Gtk.Label(xalign=0)
+            self.authCodeLabel.get_style_context().add_class("authentication_code")
+            self.incrementCounterLabel = Gtk.Label(xalign=0)
+            self.incrementCounterLabel.get_style_context().add_class("italiclbl")
+            self.incrementCounterButton = Gtk.Button()
+            self.copyButton = Gtk.Button()
+            # remove relief on copy & increment buttons; makes them blend in
+            self.incrementCounterButton.set_relief(Gtk.ReliefStyle.NONE)
+            self.copyButton.set_relief(Gtk.ReliefStyle.NONE)
+            # button layouts
+            self.authCodeLayout = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
+            self.incrementCodeLayout = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
+            # pack widgets into button layouts & add them to the buttons
+            self.authCodeLayout.pack_start(copyIcon, False, False, 3)
+            self.authCodeLayout.pack_end(self.authCodeLabel, False, False, 3)
+            self.copyButton.add(self.authCodeLayout)
+            self.incrementCounterButton.add(incrementIcon)
+            # add style class to copyButton
+            self.copyButton.get_style_context().add_class("code_button")
+            # create action buttons
+            self.deleteButton = Gtk.Button.new_from_icon_name("edit-delete-symbolic", Gtk.IconSize.BUTTON)
+            self.editButton = Gtk.Button.new_from_icon_name("edit-select-all", Gtk.IconSize.BUTTON)
+            for _, button in enumerate([self.deleteButton, self.editButton]):
+                button.get_style_context().add_class("circular")
+                button.set_margin_top(5)
+                button.set_margin_bottom(5)
+            # margins
+            self.nameLabel.set_margin_top(7)
+            self.issuerLabel.set_margin_bottom(7)
+            self.incrementCounterLabel.set_margin_bottom(7)
+            # seperator for issuer & counter
+            self.seperator = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
+            self.seperator.set_margin_bottom(7)
+            self.seperator.set_margin_left(2)
+            # pack detail layout
+            self.detailLayout.pack_start(self.nameLabel, False, False, 4)
+            self.detailLayout.pack_end(self.issuerAndCounterLayout, False, False, 4)
+            self.issuerAndCounterLayout.pack_start(self.issuerLabel, False, False, 0)
+            self.issuerAndCounterLayout.pack_start(self.seperator, False, False, 4)
+            self.issuerAndCounterLayout.pack_start(self.incrementCounterLabel, False, False, 0)
+            # pack info layout
+            self.infoLayout.pack_start(self.avatar, False, False, 3)
+            self.infoLayout.pack_start(self.detailLayout, False, False, 3)
+            self.infoLayout.pack_end(buttonBox, False, False, 3)
+            buttonBox.pack_start(self.incrementCounterButton, False, False, 0)
+            buttonBox.pack_start(self.copyButton, False, False, 0)
+            # pack ctrlLayout
+            self.ctrlLayout.pack_end(self.editButton, False, False, 3)
+            self.ctrlLayout.pack_end(self.deleteButton, False, False, 3)
+            # create revealer for second row
+            self.revealer = Gtk.Revealer()
+            self.revealer.set_reveal_child(False)
+            self.revealer.set_transition_type(Gtk.RevealerTransitionType.SLIDE_DOWN)
+            self.revealer.set_transition_duration(500)
+            # add revealer
+            self.revealer.add(self.ctrlLayout)
+            # create vertical sizegroup for infoLayout buttons
+            sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.VERTICAL)
+            sizegroup.add_widget(self.incrementCounterButton)
+            sizegroup.add_widget(self.copyButton)
+            # pack main layout
+            self.mainLayout.pack_start(self.infoLayout, True, True, 2)
+            self.mainLayout.pack_end(self.revealer, False, True, 2)
+            # create drag handle & add to control
+            self.handle = Gtk.EventBox()
+            self.handle.get_style_context().add_class("circular")
+            self.handle.get_style_context().add_class("")
+            self.handle.add(Gtk.Image.new_from_icon_name("open-menu-symbolic", Gtk.IconSize.BUTTON))
+            self.ctrlLayout.pack_start(self.handle, False, False, 3)
+            # make main layout a hoverbox
+            self.mainLayout.get_style_context().add_class("hoverbox")
+            # add main layout to row
+            self.row.add(self.mainLayout)
+            self.row.get_style_context().add_class("codelistbox")
+            self.show_all()

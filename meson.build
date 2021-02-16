@@ -4,6 +4,7 @@ project('twofactor',
   default_options: [ 'warning_level=2',
                    ],
 )
+dependency('libhandy-1', version: '>=1.0.0')
 
 i18n = import('i18n')
 
