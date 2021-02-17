@@ -121,7 +121,7 @@ class TwoFactorListBoxRow(Gtk.ListBoxRow):
             self.mainLayout.pack_start(self.infoLayout, True, True, 2)
             self.mainLayout.pack_end(self.revealer, False, True, 2)
             # create drag handle & add to control
-            self.handle = Gtk.EventBox()
+            self.handle = Gtk.Button()
             self.handle.get_style_context().add_class("circular")
             self.handle.get_style_context().add_class("")
             self.handle.add(Gtk.Image.new_from_icon_name("open-menu-symbolic", Gtk.IconSize.BUTTON))

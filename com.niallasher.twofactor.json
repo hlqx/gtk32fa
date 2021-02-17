@@ -45,7 +45,6 @@
             ]
         },
         "python3-pyotp.json",
-        "python3-pyyaml.json",
         "python3-cffi.json",
         "python3-wheel.json",
         "python3-pycairo.json",

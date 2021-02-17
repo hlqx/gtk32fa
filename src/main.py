@@ -316,7 +316,7 @@ class MainApplication(Gtk.Application):
         self.ns_name_entry.set_text("")
         self.ns_issuer_entry.set_text("")
         self.ns_add.set_label("Add")
-        self.preview_avatar.set_image_load_func(self.avatar_load_blank)
+        self.preview_avatar.set_image_load_func(self._avatar_load_blank)
 
     def ns_add_press(self, _):
         self.headerbar.set_show_close_button(True)
@@ -330,7 +330,7 @@ class MainApplication(Gtk.Application):
         Should be used threaded at all times.
     """
     def _db_commit(self):
-        InfoLogger.stdout_log("Commiting database changes do disk...",  "wait")
+        InfoLogger.stdout_log("Commiting database changes to disk...",  "wait")
         try:
             # TODO: only catch proper exceptions
             self.db_connection.commit()
@@ -393,12 +393,12 @@ class MainApplication(Gtk.Application):
             modobj = self.codes.get(current_uuid)
             # don't show image if code doesn't have one
             if modobj.image is None:
-                self.preview_avatar.set_image_load_func(self.avatar_load_blank)
+                self.preview_avatar.set_image_load_func(self._avatar_load_blank)
                 self.clear_image_btn_revealer.set_reveal_child(False)
             else:
                 # TODO
                 # FIXME move this
-                # self.preview_avatar.set_image_load_func(self.avatar_load_func())
+                # self.preview_avatar.set_image_load_func(self._avatar_load_func())
                 self.clear_image_btn_revealer.set_reveal_child(True)
             # if the secret has changed, recalculate
             if self.ns_secret_entry.get_text() != modobj.codestr:
@@ -459,7 +459,7 @@ class MainApplication(Gtk.Application):
         self.ns_name_entry.set_text("")
         self.ns_issuer_entry.set_text("")
         # clear preview avatar
-        self.preview_avatar.set_image_load_func(self.avatar_load_blank)
+        self.preview_avatar.set_image_load_func(self._avatar_load_blank)
 
     @staticmethod
     def validator(button=None, *data):
@@ -756,7 +756,7 @@ class MainApplication(Gtk.Application):
             #scaled_pixbuf = pixbuf.scale_simple(avatar_size, avatar_size,
             #                                    GdkPixbuf.InterpType.BILINEAR)
             #del pixbuf
-            new_row.avatar.set_image_load_func(self.avatar_load_func, pixbuf)
+            new_row.avatar.set_image_load_func(self._avatar_load_func, pixbuf)
         # add authentication button to sizegroup
         self.authentication_sizegroup.add_widget(new_row.copyButton)
         if codeinfo['codetype'] == 'totp':
@@ -890,16 +890,24 @@ class MainApplication(Gtk.Application):
         self.spinner.stop()
         self.spinner.hide()
 
-    def avatar_load_func(self, size, pixbuf):
+    """
+        Supply a scaled pixbuf when requested
+    """
+    def _avatar_load_func(self, size, pixbuf):
         scaled_pixbuf = pixbuf.scale_simple(size,
                                             size,
                                             GdkPixbuf.InterpType.BILINEAR)
         return scaled_pixbuf
 
-    # provide nothing to the avatar, in effect resetting it to using initials
-    def avatar_load_blank(self, size):
+    """
+        Provide an instance of None to a widget, providing no image
+    """
+    def _avatar_load_blank(self, size):
         return None
 
+    """
+        Present a Gtk filechooser to allow the user to pick an image
+    """
     def choose_image(self, *data) -> GdkPixbuf.Pixbuf:
         imagepath = self.get_image_path()
         # imagepath returns false if loading is cancelled
@@ -909,7 +917,7 @@ class MainApplication(Gtk.Application):
             self.currentpixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(imagepath,
                                                                         avatarsize,
                                                                         avatarsize)
-            self.preview_avatar.set_image_load_func(self.avatar_load_func,
+            self.preview_avatar.set_image_load_func(self._avatar_load_func,
                                                     self.currentpixbuf)
             self.hasimage = True
             self.imagepath = imagepath
@@ -918,7 +926,7 @@ class MainApplication(Gtk.Application):
             return
 
     def clear_image(self, *data):
-        self.preview_avatar.set_image_load_func(self.avatar_load_blank)
+        self.preview_avatar.set_image_load_func(self._avatar_load_blank)
         self.clear_image_btn_revealer.set_reveal_child(False)
         self.hasimage = False
 
@@ -1014,20 +1022,26 @@ class MainApplication(Gtk.Application):
             row.get_style_context().remove_class("tophighlight")
             row.get_style_context().add_class("bottomhighlight")
             pass
-        # TODO: scrolling logic
         return
+        # FIXME FUCKFUCKFUCKFUCKFUCKFUCK
         scroll_adjustment = self.listbox_scrolledwindow.get_vadjustment()
-        listbox_alloc = self.mainlistbox.get_allocation()
-        hotzone = 24
-        b_hotzone = listbox_alloc.height - hotzone
-        print(scroll_adjustment.get_value())
-        print(scroll_adjustment.get_upper())
-        if y < hotzone:
-            print(self.listbox_scrolledwindow.get_vadjustment())
-            # scroll up
+        sw_alloc = self.listbox_scrolledwindow.get_allocation()
+        hotzone = 48
+        t_hotzone = sw_alloc.height - ((sw_alloc.height / 4) * 3)
+        b_hotzone = sw_alloc.height - ((sw_alloc.height / 6) * 1)
+        if y < t_hotzone:
+            InfoLogger.stdout_log("Scrollup attempted", "info")
+            adj = self.listbox_scrolledwindow.get_vadjustment()
+            cadj = adj.get_value()
+            adj.set_value(cadj - 25)
+            self.listbox_scrolledwindow.set_vadjustment(adj)
         if y >= b_hotzone:
-            print("SCROLLDOWN")
-            # scroll down
+            # TODO: remove magic numbers
+            InfoLogger.stdout_log("Scrolldown attempted", "info")
+            adj = self.listbox_scrolledwindow.get_vadjustment()
+            cadj = adj.get_value()
+            adj.set_value(cadj + 1)
+            self.listbox_scrolledwindow.set_vadjustment(adj)
 
     def drag_begin(self, widget, context, preview_widget):
         # hide ctrl strip when dragging, so that more items can be present at once
