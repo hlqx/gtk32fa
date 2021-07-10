@@ -1,5 +1,7 @@
 # twofactor
 
+Note: this is old. very scuffed code.
+
 ![App Screenshot](screenshot.jpg?raw=true)
 
 ## Two Factor Authentication Wallet
